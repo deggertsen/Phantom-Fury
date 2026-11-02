@@ -80,11 +80,19 @@ const TIERS := {
 	# because nothing in the fiction would be swinging it.
 	FULL_RESONANCE: {
 		"label": "FULL RESONANCE",
-		"blurb": "The heaviest fights: squats, jumps, and push-ups. Clear room to jump.",
+		"blurb": "The heaviest fights: a phantom every second or two, squats, jumps, and push-ups. Clear room to jump.",
 		"speed": 1.0,
 		"telegraph": 1.0,
+		# The feed doubles and two more phantoms may be live at once (David, 2026-11-01: a phantom
+		# reaching the player every one to two seconds). Health is 1.1x and then, per rift group,
+		# as much more as the faster feed lets the player kill faster (pace_health; see
+		# apply_mission), so a mission stays about a tenth longer than Standard: the extra work is
+		# pace, not length. Where the player's own cadence already set the pace (pairs, The Maw)
+		# the feed changes nothing and health stays at 1.1x.
 		"health": 1.1,
-		"interval": 1.0,
+		"interval": 0.5,
+		"max_live_bonus": 2,
+		"pace_health": true,
 		"contact": 1.0,
 		"duck_only": false,
 		"squats": true,
@@ -142,6 +150,8 @@ static func apply_mission(mission: Dictionary, tier_id: String) -> Dictionary:
 	var waves: Array = []
 	for wave in mission.get("rifts", []):
 		waves.append(apply_wave(wave, tier))
+	if bool(info(tier).get("pace_health", false)):
+		_scale_health_with_pace(mission.get("rifts", []), waves, maxi(int(mission.get("max_concurrent", 1)), 1), tier)
 	if mission.has("rifts"):
 		tiered["rifts"] = waves
 	var boss: Dictionary = tiered.get("tier_boss", {})
@@ -152,6 +162,30 @@ static func apply_mission(mission: Dictionary, tier_id: String) -> Dictionary:
 		if boss.has("expected_minutes"):
 			tiered["expected_minutes"] = boss["expected_minutes"]
 	return tiered
+
+## A pace tier: for each group of rifts open together, the kill rate the feed allows (the group's
+## spawns a second, never above the player's cadence, WorldMap.KILL_CADENCE_SECONDS) at this
+## tier over the same at Standard, and the group's health scaled by that. A hold's team time is
+## left alone: the team seals as much faster as the player kills faster.
+static func _scale_health_with_pace(standard_waves: Array, tiered_waves: Array, concurrent: int, tier_id: String) -> void:
+	var cadence := 1.0 / WorldMap.KILL_CADENCE_SECONDS
+	var index := 0
+	while index < standard_waves.size():
+		var feed_standard := 0.0
+		var feed_tier := 0.0
+		for offset in range(index, mini(index + concurrent, standard_waves.size())):
+			var standard: Dictionary = standard_waves[offset]
+			var tiered: Dictionary = tiered_waves[offset]
+			feed_standard += 1.0 / maxf(float(standard.get("interval", 3.0)), 0.1)
+			feed_tier += 1.0 / maxf(float(tiered.get("interval", 3.0)), 0.1)
+		var ratio := minf(feed_tier, cadence) / maxf(minf(feed_standard, cadence), 0.001)
+		for offset in range(index, mini(index + concurrent, standard_waves.size())):
+			var tiered: Dictionary = tiered_waves[offset]
+			if tiered.has("health"):
+				tiered["health"] = maxi(int(round(float(tiered["health"]) * ratio)), 1)
+		index += concurrent
+	if tier_id == "":
+		return
 
 ## One wave at this tier. Standard returns an identical copy. Fields a wave does not have stay
 ## absent unless the tier changes them, so a Standard wave compares equal to the catalog's.
@@ -164,6 +198,8 @@ static func apply_wave(wave: Dictionary, tier_id: String) -> Dictionary:
 		out["health"] = maxi(int(round(float(wave["health"]) * float(tier["health"]))), 1)
 	if wave.has("interval"):
 		out["interval"] = float(wave["interval"]) * float(tier["interval"])
+	if wave.has("max_live"):
+		out["max_live"] = int(wave["max_live"]) + int(tier.get("max_live_bonus", 0))
 	# Cover the Team: the team's seal takes as much longer as the rift has more health, so the
 	# hold drains at Standard's pace and the tier's length holds there too.
 	if float(wave.get("hold_seconds", 0.0)) > 0.0:

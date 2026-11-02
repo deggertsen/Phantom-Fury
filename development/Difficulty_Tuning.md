@@ -15,7 +15,7 @@ The estimate is `WorldMap.run_seconds`. It assumes 13 rift damage per kill at av
 Validation fails when any of these breaks:
 
 1. **The estimate is on the card.** At every tier, the average puncher's clean run, rounded to a whole minute, sits inside the range the card shows. For The Maw at Full Resonance, both a Maw that breaks and one that holds.
-2. **Tiers keep a mission's length.** Assist and Operator run within 5 % of Standard. Full Resonance runs 10 % longer, give or take 5 %. Tiers change how hard a mission is, not how long.
+2. **Tiers keep a mission's length.** Assist and Operator run within 5 % of Standard. Full Resonance runs 10 % longer, give or take 5 %. Tiers change how hard a mission is, not how long. Since 2026-11-01 Full Resonance is a pace tier as well as the movement tier: the feed runs at half the interval (a phantom every second or two, David's ask from the headset), two more phantoms may be live, and rift health is 1.1x and then, per group of rifts open together, as much more as the faster feed lets the player kill faster (`DifficultyTier._scale_health_with_pace`: the group's spawns a second, capped at the player's cadence, at the tier over the same at Standard). Where the player's cadence already set the pace, as on pairs and The Maw, the feed changes nothing and health stays 1.1x. So the length still lands about 10 % over Standard everywhere.
 3. **Districts weigh what their sibling operation weighs.** A district kind's pressure per minute stays within 15 % of its sibling's at the same tier. The siblings:
 
 | District kind | Sibling operation | Why |

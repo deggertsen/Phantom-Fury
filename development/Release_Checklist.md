@@ -11,7 +11,7 @@
 - [ ] Victory and defeat each emit once and show the operation's debrief line.
 - [ ] The wrist clock counts up from 0:00 when the round goes live, holds while paused, and never ends the mission.
 - [ ] Victory results show the completion time; a faster victory reads NEW BEST TIME, and Reset Progress clears best times.
-- [ ] Clearing an operation at any difficulty unlocks the next and records a best score and time for that difficulty; Reset Progress relocks them, clears best scores and times, and leaves audio, training, and the difficulty choice alone.
+- [ ] Clearing an operation at any difficulty unlocks the next and records a best score and time for that difficulty; Reset to First Launch clears them with the best scores and times, the training record, the world and difficulty choices, and the audio, haptic, and comfort settings, and the world map comes up as a new recruit sees it.
 - [ ] Operations offers Assist, Standard, Operator, and Full Resonance; the choice is marked, persists across restarts, defaults to Standard, and shows on Deploy, the Operations cards' best times, and results. Retry and Next Operation keep it.
 - [ ] Standard plays every operation exactly as the catalog tunes it; Assist and Operator change phantom speed, tells, rift health, spawn rate, and contact damage.
 - [ ] Full Resonance: no sweeps in OP-01 to OP-05; Chen's Full Resonance line plays in the countdown; The Maw breaks on a fresh profile's first Full Resonance attempt and plays the turn, the fight, and the retreat to a victory. No other difficulty ever reaches the boss.

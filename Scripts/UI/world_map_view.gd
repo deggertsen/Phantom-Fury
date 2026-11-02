@@ -284,10 +284,18 @@ func _rebuild_regions() -> void:
 		for entry in _entries:
 			if entry.get("id", "") in region_data["cities"] and entry.get("playable", false) and not entry.get("liberated", false) and _matches(entry):
 				in_reach += 1
-		var box: Rect2 = region_data["box"]
-		var bounds := Rect2(_to_screen(box.position), box.size * _xform.get_scale())
-		var button := _map_button(StringName("world_region_%s" % region_id), bounds, region_id == selected_region, 0.18)
-		button.modulate = Color(1, 1, 1, 1.0 if in_reach > 0 or _filter == "all" else 0.35)
+		# One button per box (Asia has two); the name sits on the first, over the label point.
+		var boxes: Array = region_data.get("boxes", [region_data["box"]])
+		var button: Button = null
+		var bounds := Rect2()
+		for index in boxes.size():
+			var box: Rect2 = boxes[index]
+			var box_bounds := Rect2(_to_screen(box.position), box.size * _xform.get_scale())
+			var box_button := _map_button(StringName("world_region_%s" % region_id), box_bounds, region_id == selected_region, 0.18)
+			box_button.modulate = Color(1, 1, 1, 1.0 if in_reach > 0 or _filter == "all" else 0.35)
+			if index == 0:
+				button = box_button
+				bounds = box_bounds
 		var stack := VBoxContainer.new()
 		stack.add_theme_constant_override("separation", -2)
 		stack.mouse_filter = Control.MOUSE_FILTER_IGNORE

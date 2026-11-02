@@ -31,7 +31,7 @@ Ask a player who has not seen the project, without coaching:
 
 Pass condition: all four within 15 seconds.
 
-- The whole world opens with PICK A REGION: six outlined regions, one per continent (North America, South America, Europe, Africa, Asia, Oceania), each named with how many of its cities are in reach. No outline crosses into another continent: Asia stops north of Australia, Europe and Africa split at the Mediterranean, and Oceania covers Australia and New Zealand. A region lights when pointed at, and the trigger picks the region the ray is inside, even at its edge next to a neighbor; Europe is the smallest outline and must still be easy to hit. No city can be picked from here.
+- The whole world opens with PICK A REGION: six outlined regions, one per continent (North America, South America, Europe, Africa, Asia, Oceania), each named with how many of its cities are in reach. No outline crosses into another continent: Oceania takes Southeast Asia and Indonesia with Australia and New Zealand, up to Hong Kong's latitude; Asia is the mainland north of that plus a South Asian pocket for India and Arabia, so it shows as two joined outlines; Europe and Africa split at the Mediterranean. A region lights when pointed at, and the trigger picks the region the ray is inside, even at its edge next to a neighbor; Europe is the smallest outline and must still be easy to hit. No city can be picked from here.
 - Picking a region eases the map to it over about half a second; the header names the region. Nothing can be pressed on the map until it settles. Its cities are then the buttons, large enough to pick in the headset: check the Toronto / New York / Chicago cluster and Vancouver / Portland. Cities outside the region are drawn but not pickable. If the picked city was elsewhere, the card switches to home or the region's most fought-over city.
 - **Whole World** at the bottom of the map, or Escape on desktop, eases back out. The World Map button on the main menu always starts at the whole world.
 - The picked city carries a white ring and fills the right panel. Nothing starts until Open. Open closes the map in on the city with a ring locking onto it and its name; the city screen appears only after the zoom ends, in under half a second. Triggering anything during that zoom does nothing.
@@ -76,7 +76,7 @@ Training is no longer a menu: it is Dr. Chen's training chamber ([Tutorial_Plan.
 - Music (when shown), Effects, and Haptics steppers show their current value and explain what they affect.
 - Reduced Flashes shows its state.
 - Changing any setting leaves the list scrolled where it was, with no jump to the top. Opening settings again starts at the top.
-- Reset Progress asks for confirmation and explains that audio and training are kept.
+- Reset to First Launch asks for confirmation and says everything goes: progress, bests and medals, the training record, world and difficulty choices, audio, haptics, and comfort. Confirming lands on the world map with Training leading, as a new recruit sees it (David, 2026-11-01: the old reset kept training, so a first boot could not be tested).
 - Back returns to the correct origin: the world map, a city's section, results, or pause.
 - Settings and progress persist after an app restart.
 
