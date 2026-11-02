@@ -25,7 +25,7 @@ Options: `-VersionName 1.1.0` to change the shown version, `-SkipValidation` onl
 
 What it does, so failures can be read:
 
-- Bumps `version/code` in both export presets to the highest existing code plus one. Meta rejects a code it has already seen on any channel.
+- Bumps `version/code` in both export presets to the highest existing code plus one, and `config/version_code` in `project.godot` to match (the run log records it; validation fails if they disagree). Meta rejects a code it has already seen on any channel.
 - Runs the editor import and the validation runner. The known flaky `_validate_arc_motion` failure is retried once; any other failure stops the deploy.
 - Commits the bump as "Bump version code to N for the <channel> channel."
 - Exports `builds/phantom-fury-release.apk` with the release keystore, with the Gradle daemon disabled so the export exits.

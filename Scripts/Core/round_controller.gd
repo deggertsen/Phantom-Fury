@@ -50,6 +50,11 @@ func _ready() -> void:
 	_director.rift_spawned.connect(_on_rift_spawned)
 	_director.all_clear.connect(_on_all_clear)
 	_life_force.life_force_depleted.connect(_on_life_force_depleted)
+	# One line per finished round in user://run_log.csv, on the device only (RunLog).
+	var run_log := RunLog.new()
+	run_log.name = "RunLog"
+	add_child(run_log)
+	run_log.attach(self, _director)
 	# GameFlowController starts the round after the player selects Deploy.
 
 func is_round_active() -> bool:
