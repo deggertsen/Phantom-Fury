@@ -56,7 +56,7 @@ func _begin_wrap(accent: Color, margin: int = 18) -> void:
 # further down. report: outcome, score, debrief, seconds, previous_best, best_seconds, tier,
 # mission (entry), sealed_before, entries (after the round), next (entry, or {}), offer_training.
 
-## Left: what the round did to the city, and the best time at the tier it was played at.
+## Left: what the round did to the city, the round's workout, and the bests at the tier played.
 func show_city_report(report: Dictionary) -> void:
 	var victory: bool = report.get("outcome", &"") == &"victory"
 	_begin_wrap(COLOR_GREEN if victory else COLOR_RED)
@@ -83,11 +83,8 @@ func show_city_report(report: Dictionary) -> void:
 	else:
 		body = "Life force depleted. The front did not move."
 	_content.add_child(_wrapped(body, 17, COLOR_MUTED))
-	_content.add_child(_divider())
-	var best := float(report.get("best_seconds", 0.0))
-	if best > 0.0:
-		_content.add_child(_label("YOUR BEST AT %s" % DifficultyTier.label(String(report.get("tier", ""))), 16, COLOR_MUTED, true))
-		_content.add_child(_label(_clock(best), 34, COLOR_TEXT, true))
+	_add_session_stats(report.get("stats", {}))
+	_add_bests(report, "YOUR BEST AT %s" % DifficultyTier.label(String(report.get("tier", ""))))
 	_content.add_child(_spacer())
 	_content.add_child(_hint())
 
@@ -96,46 +93,7 @@ func show_results_map(report: Dictionary) -> void:
 	var victory: bool = report.get("outcome", &"") == &"victory"
 	var accent := COLOR_GREEN if victory else COLOR_RED
 	_begin_wrap(accent, 0)
-	var header := MarginContainer.new()
-	for side in ["margin_left", "margin_right"]:
-		header.add_theme_constant_override(side, 20)
-	header.add_theme_constant_override("margin_top", 12)
-	header.add_theme_constant_override("margin_bottom", 12)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 22)
-	header.add_child(row)
-	var outcome := VBoxContainer.new()
-	outcome.add_theme_constant_override("separation", 2)
-	outcome.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var subtitle := "ALL RIFTS SEALED" if victory else "LIFE FORCE DEPLETED"
-	var tier_label := DifficultyTier.label(String(report.get("tier", ""))) if report.has("tier") else ""
-	if tier_label != "":
-		subtitle += "  •  %s" % tier_label
-	outcome.add_child(_label(subtitle, 16, accent, true))
-	outcome.add_child(_label("MISSION COMPLETE" if victory else "OPERATION ENDED", 30, COLOR_TEXT, true))
-	row.add_child(outcome)
-	var seconds := float(report.get("seconds", 0.0))
-	if victory and seconds > 0.0:
-		var time_stack := VBoxContainer.new()
-		time_stack.add_theme_constant_override("separation", 0)
-		var time_label := _label(_clock(seconds), 40, COLOR_TEXT, true)
-		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		time_stack.add_child(time_label)
-		var previous := float(report.get("previous_best", 0.0))
-		var note := _label("NEW BEST TIME" if previous > 0.0 and seconds < previous else "SEALED IN", 16, COLOR_GREEN if previous > 0.0 and seconds < previous else COLOR_MUTED, true)
-		note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		time_stack.add_child(note)
-		row.add_child(time_stack)
-	var score_stack := VBoxContainer.new()
-	score_stack.add_theme_constant_override("separation", 0)
-	var score_label := _label(_grouped(int(report.get("score", 0))), 28, accent, true)
-	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	score_stack.add_child(score_label)
-	var score_note := _label("SCORE", 16, COLOR_MUTED, true)
-	score_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	score_stack.add_child(score_note)
-	row.add_child(score_stack)
-	_content.add_child(header)
+	_content.add_child(_results_header(report, "ALL RIFTS SEALED" if victory else "LIFE FORCE DEPLETED", accent))
 	var entries: Array[Dictionary] = report.get("entries", [] as Array[Dictionary])
 	var mission_id := String((report.get("mission", {}) as Dictionary).get("id", ""))
 	var before := int(report.get("sealed_before", -1))
@@ -194,6 +152,151 @@ func show_results_actions(report: Dictionary) -> void:
 		_content.add_child(_make_action_button(&"results_menu", "CITY MAP", COLOR_BLUE, Vector2(0, 60)))
 
 # --- Pieces ---------------------------------------------------------------------------------
+
+## The round's workout under a divider: six numbers in two rows, then the resolves by phantom,
+## the misses, and the wrong hands. Nothing for a report without stats.
+func _add_session_stats(stats: Dictionary) -> void:
+	if stats.is_empty():
+		return
+	_content.add_child(_divider())
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 4)
+	grid.add_child(_stat_tile(str(int(stats.get("punches", 0))), "PUNCHES", COLOR_TEXT))
+	grid.add_child(_stat_tile(str(int(stats.get("crits", 0))), "LURE CRITS", COLOR_AMBER))
+	grid.add_child(_stat_tile(str(int(stats.get("longest_chain", 0))), "BEST CHAIN", COLOR_CYAN))
+	grid.add_child(_stat_tile(_clock(float(stats.get("active_seconds", 0.0))), "ACTIVE", COLOR_TEXT))
+	grid.add_child(_stat_tile("~%d" % roundi(float(stats.get("calories", 0.0))), "KCAL (EST.)", COLOR_GREEN))
+	grid.add_child(_stat_tile(str(int(stats.get("rifts_sealed", 0))), "RIFTS SEALED", COLOR_TEXT))
+	_content.add_child(grid)
+	# Broken by hand into two lines so no count is split from its name.
+	var struck := "GOLD %d  •  BLUE %d  •  BLOCKS %d" % [int(stats.get("gold", 0)), int(stats.get("blue", 0)), int(stats.get("blocks", 0))]
+	var rest := "DODGES %d  •  MISSED %d  •  WRONG HAND %d" % [int(stats.get("dodges", 0)), int(stats.get("misses", 0)), int(stats.get("wrong_hand", 0))]
+	_content.add_child(_label("%s\n%s" % [struck, rest], 13, Color("c4d3e4"), true))
+
+## One stat: the number over what it counts.
+func _stat_tile(value: String, caption: String, color: Color) -> VBoxContainer:
+	var tile := VBoxContainer.new()
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.add_theme_constant_override("separation", -2)
+	tile.add_child(_label(value, 20, color, true))
+	tile.add_child(_label(caption, 11, COLOR_MUTED, true))
+	return tile
+
+## The bests at the tier played, under a divider: the time, the score, and the medal the score
+## earned. Nothing until there is a best of either.
+func _add_bests(report: Dictionary, eyebrow: String, divided: bool = true, eyebrow_size: int = 14) -> void:
+	var best_time := float(report.get("best_seconds", 0.0))
+	var best_score := int(report.get("best_score", 0))
+	if best_time <= 0.0 and best_score <= 0:
+		return
+	if divided:
+		_content.add_child(_divider())
+	_content.add_child(_wrapped(eyebrow, eyebrow_size, COLOR_MUTED, true))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	if best_time > 0.0:
+		var time := _label(_clock(best_time), 26, COLOR_TEXT, true)
+		time.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(time)
+	if best_score > 0:
+		var score := _label(_grouped(best_score), 20, COLOR_TEXT, true)
+		score.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(score)
+	var filler := Control.new()
+	filler.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	filler.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(filler)
+	var medal := String(report.get("best_medal", ""))
+	if medal != "":
+		row.add_child(_medal_tag(medal, 22, 15))
+	_content.add_child(row)
+
+## A mission card's best score with the medal it earned in front: "BEST SCORE 12,840".
+func _best_score_line(best_score: int, medal: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	if medal != "":
+		row.add_child(_medal_tag(medal, 20, 15))
+	var score := _label("BEST SCORE %s" % _grouped(best_score), 15, COLOR_TEXT, true)
+	score.size_flags_vertical = Control.SIZE_SHRINK_END
+	row.add_child(score)
+	return row
+
+## A medal and its name in its color, side by side.
+func _medal_tag(medal: String, diameter: float, font_size: int) -> HBoxContainer:
+	var tag := HBoxContainer.new()
+	tag.add_theme_constant_override("separation", 5)
+	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tag.add_child(MedalBadge.create(medal, diameter))
+	var word := _label(MissionMedals.label(medal), font_size, MedalBadge.color(medal), true)
+	word.size_flags_vertical = Control.SIZE_SHRINK_END
+	tag.add_child(word)
+	return tag
+
+## The results header over the map: the outcome and the difficulty on a line of their own, then
+## MISSION COMPLETE or OPERATION ENDED with the time (after a victory) and the score beside it.
+## The line has the width to itself, so NEW BEST TIME and NEW BEST SCORE fit beside the title.
+func _results_header(report: Dictionary, subtitle: String, accent: Color) -> MarginContainer:
+	var victory: bool = report.get("outcome", &"") == &"victory"
+	var header := MarginContainer.new()
+	for side in ["margin_left", "margin_right"]:
+		header.add_theme_constant_override(side, 20)
+	header.add_theme_constant_override("margin_top", 12)
+	header.add_theme_constant_override("margin_bottom", 12)
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 0)
+	header.add_child(stack)
+	if report.has("tier"):
+		subtitle += "  •  %s" % DifficultyTier.label(String(report.get("tier", "")))
+	stack.add_child(_label(subtitle, 16, accent, true))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 22)
+	stack.add_child(row)
+	var title := _label("MISSION COMPLETE" if victory else "OPERATION ENDED", 30, COLOR_TEXT, true)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	row.add_child(title)
+	var seconds := float(report.get("seconds", 0.0))
+	if victory and seconds > 0.0:
+		var time_stack := VBoxContainer.new()
+		time_stack.add_theme_constant_override("separation", 0)
+		var time_label := _label(_clock(seconds), 40, COLOR_TEXT, true)
+		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		time_stack.add_child(time_label)
+		var previous := float(report.get("previous_best", 0.0))
+		var new_best := previous > 0.0 and seconds < previous
+		var note := _label("NEW BEST TIME" if new_best else "SEALED IN", 16, COLOR_GREEN if new_best else COLOR_MUTED, true)
+		note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		time_stack.add_child(note)
+		row.add_child(time_stack)
+	row.add_child(_score_stack(report, accent))
+	return header
+
+## The results header's score: the medal this round earned beside the number, NEW BEST SCORE under
+## it when it beats the stored best (as NEW BEST TIME does), and the medal's name.
+func _score_stack(report: Dictionary, accent: Color) -> VBoxContainer:
+	var score := int(report.get("score", 0))
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 0)
+	var number := HBoxContainer.new()
+	number.add_theme_constant_override("separation", 6)
+	number.alignment = BoxContainer.ALIGNMENT_END
+	var medal := String(report.get("medal", ""))
+	if medal != "":
+		number.add_child(MedalBadge.create(medal, 26))
+	var score_label := _label(_grouped(score), 28, accent, true)
+	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	score_label.size_flags_vertical = Control.SIZE_SHRINK_END
+	number.add_child(score_label)
+	stack.add_child(number)
+	var previous := int(report.get("previous_best_score", 0))
+	var new_best: bool = report.get("outcome", &"") == &"victory" and previous > 0 and score > previous
+	var note := _label("NEW BEST SCORE" if new_best else ("%s  •  SCORE" % MissionMedals.label(medal) if medal != "" else "SCORE"), 16, COLOR_GREEN if new_best else COLOR_MUTED, true)
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	stack.add_child(note)
+	return stack
 
 func _map(entries: Array[Dictionary], selected_id: String, interactive: bool, sealed_before: int = -1, highlight_id: String = "") -> CityMap:
 	var map := CityMap.new()
@@ -283,12 +386,7 @@ func _percent(sealed: int, total: int) -> int:
 	return roundi(100.0 * sealed / total)
 
 func _grouped(value: int) -> String:
-	var digits := str(absi(value))
-	var out := ""
-	while digits.length() > 3:
-		out = "," + digits.substr(digits.length() - 3) + out
-		digits = digits.substr(0, digits.length() - 3)
-	return ("-" if value < 0 else "") + digits + out
+	return CityMap.grouped(value)
 
 func _wrapped(text: String, font_size: int, color: Color, bold: bool = false) -> Label:
 	var label := _label(text, font_size, color, bold)
@@ -498,7 +596,8 @@ func show_world_city(entry: Dictionary, world: Dictionary) -> void:
 		button.disabled = true
 		_content.add_child(button)
 
-## Rows of [eyebrow, value, color]: the eyebrow at the left, the value flush right, a rule between rows.
+## Rows of [eyebrow, value, color] or [eyebrow, value, color, medal]: the eyebrow at the left, the
+## value flush right with the medal before it, a rule between rows.
 func _facts(rows: Array) -> Control:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _style_box(Color(0, 0, 0, 0), COLOR_EDGE, 1, 6))
@@ -512,6 +611,8 @@ func _facts(rows: Array) -> Control:
 		eyebrow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		eyebrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		line.add_child(eyebrow)
+		if row.size() > 3 and String(row[3]) != "":
+			line.add_child(_medal_tag(String(row[3]), 18, 13))
 		var value := _label(String(row[1]), 15, row[2], true)
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		line.add_child(value)
@@ -531,6 +632,8 @@ func show_operations_status(city: Dictionary) -> void:
 	var entry: Dictionary = city.get("entry", {})
 	var state := String(entry.get("state", WorldMap.STATE_SAFE))
 	_begin_wrap(_state_color(state))
+	# Tighter than the other panels: mid-operation, the note under the pips runs to three lines.
+	_content.add_theme_constant_override("separation", 7)
 	var back := _make_action_button(&"city_world", "←  WORLD MAP", COLOR_CYAN, Vector2(0, 50))
 	_compact_menu_button(back, 50.0)
 	_content.add_child(back)
@@ -648,11 +751,13 @@ func show_district_detail(city: Dictionary) -> void:
 	summary.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_content.add_child(summary)
 	var best := float(city.get("best_seconds", 0.0))
+	var best_score := int(city.get("best_score", 0))
 	_content.add_child(_facts([
 		["MISSION", String(city.get("kind_label", "")), COLOR_TEXT],
 		["TIER", DifficultyTier.label(tier), tier_color],
 		["EXPECTED", MissionCatalog.expected_minutes_text({"expected_minutes": city.get("expected_minutes", [])}), COLOR_TEXT],
 		["YOUR BEST", _clock(best) if best > 0.0 else "—", Color("7fe3ff")],
+		["BEST SCORE", _grouped(best_score) if best_score > 0 else "—", COLOR_TEXT, String(city.get("medal", ""))],
 	]))
 	_content.add_child(_spacer())
 	if String(entry.get("state", "")) == WorldMap.STATE_THREATENED:
@@ -684,24 +789,29 @@ func show_district_detail(city: Dictionary) -> void:
 # report["city"]: the city map now, as show_operations_status takes it, or {} for a city with no
 # missions. report["picked"]: a district was picked since the round ended.
 
-## Left: what the round did to the city, the best time, then Replay, World, and Settings.
+## Left: what the round did to the city, the round's workout, the bests, then Replay, World, and Settings.
 func show_world_report(report: Dictionary) -> void:
 	var victory: bool = report.get("outcome", &"") == &"victory"
 	var world: Dictionary = report.get("world", {})
 	var entry: Dictionary = world.get("entry", {})
 	_begin_wrap(COLOR_GREEN if victory else COLOR_RED)
+	# Tighter than the other panels: the workout and the bests share the height with three buttons.
+	_content.add_theme_constant_override("separation", 5)
 	_content.add_child(_wrapped("%s  •  %s" % [entry.get("state_label", ""), entry.get("name", "")], 15, COLOR_MUTED, true))
 	var before := int(world.get("liberation_before", 0))
 	var after := int(world.get("liberation_after", before))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
-	row.add_child(_label("%d%%" % after, 44, Color("7fe3ff"), true))
-	var word := _label("LIBERATED", 18, Color("c4d3e4"), true)
-	word.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(word)
-	_content.add_child(row)
+	row.add_child(_label("%d%%" % after, 40, Color("7fe3ff"), true))
+	# UP FROM sits under LIBERATED, beside the number, to leave the panel's height to the workout.
+	var words := VBoxContainer.new()
+	words.add_theme_constant_override("separation", 0)
+	words.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	words.add_child(_label("LIBERATED", 18, Color("c4d3e4"), true))
 	if after > before:
-		_content.add_child(_label("UP FROM %d%%" % before, 16, COLOR_MUTED, true))
+		words.add_child(_label("UP FROM %d%%" % before, 16, COLOR_MUTED, true))
+	row.add_child(words)
+	_content.add_child(row)
 	var sealed_after: Array = world.get("sealed_after", [])
 	var complete: bool = world.get("operation_complete", false)
 	var moved: bool = world.get("moved", victory)
@@ -725,11 +835,8 @@ func show_world_report(report: Dictionary) -> void:
 	elif victory:
 		body = "%s was already sealed. Your time still counts." % district
 	_content.add_child(_wrapped(body, 16, COLOR_MUTED))
-	_content.add_child(_divider())
-	var best := float(report.get("best_seconds", 0.0))
-	if best > 0.0:
-		_content.add_child(_wrapped("YOUR BEST  •  %s AT %s" % [String(world.get("kind_label", "")), DifficultyTier.label(String(report.get("tier", "")))], 14, COLOR_MUTED, true))
-		_content.add_child(_label(_clock(best), 34, COLOR_TEXT, true))
+	_add_session_stats(report.get("stats", {}))
+	_add_bests(report, "YOUR BEST  •  %s AT %s" % [String(world.get("kind_label", "")), SHORT_TIER_LABELS.get(String(report.get("tier", "")), DifficultyTier.label(String(report.get("tier", ""))))], false, 12)
 	_content.add_child(_spacer())
 	# After a defeat Retry leads on the right; after a seal, Replay plays the district for its time.
 	if victory:
@@ -752,17 +859,6 @@ func show_world_results_map(report: Dictionary) -> void:
 	var city: Dictionary = report.get("city", {})
 	var accent := COLOR_GREEN if victory else COLOR_RED
 	_begin_wrap(accent, 0)
-	var header := MarginContainer.new()
-	for side in ["margin_left", "margin_right"]:
-		header.add_theme_constant_override(side, 20)
-	header.add_theme_constant_override("margin_top", 12)
-	header.add_theme_constant_override("margin_bottom", 12)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 22)
-	header.add_child(row)
-	var outcome := VBoxContainer.new()
-	outcome.add_theme_constant_override("separation", 2)
-	outcome.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var complete: bool = world.get("operation_complete", false)
 	var moved: bool = world.get("moved", victory)
 	var subtitle := "LIFE FORCE DEPLETED"
@@ -772,34 +868,7 @@ func show_world_results_map(report: Dictionary) -> void:
 		subtitle = "DISTRICT SEALED"
 	elif victory:
 		subtitle = "ALL RIFTS SEALED"
-	if report.has("tier"):
-		subtitle += "  •  %s" % DifficultyTier.label(String(report.get("tier", "")))
-	outcome.add_child(_label(subtitle, 16, accent, true))
-	outcome.add_child(_label("MISSION COMPLETE" if victory else "OPERATION ENDED", 30, COLOR_TEXT, true))
-	row.add_child(outcome)
-	var seconds := float(report.get("seconds", 0.0))
-	if victory and seconds > 0.0:
-		var time_stack := VBoxContainer.new()
-		time_stack.add_theme_constant_override("separation", 0)
-		var time_label := _label(_clock(seconds), 40, COLOR_TEXT, true)
-		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		time_stack.add_child(time_label)
-		var previous := float(report.get("previous_best", 0.0))
-		var new_best := previous > 0.0 and seconds < previous
-		var note := _label("NEW BEST TIME" if new_best else "SEALED IN", 16, COLOR_GREEN if new_best else COLOR_MUTED, true)
-		note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		time_stack.add_child(note)
-		row.add_child(time_stack)
-	var score_stack := VBoxContainer.new()
-	score_stack.add_theme_constant_override("separation", 0)
-	var score_label := _label(_grouped(int(report.get("score", 0))), 28, accent, true)
-	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	score_stack.add_child(score_label)
-	var score_note := _label("SCORE", 16, COLOR_MUTED, true)
-	score_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	score_stack.add_child(score_note)
-	row.add_child(score_stack)
-	_content.add_child(header)
+	_content.add_child(_results_header(report, subtitle, accent))
 	if city.is_empty():
 		_content.add_child(_operations_map(world.get("section", {}), world.get("sealed_after", []), "", false))
 	else:

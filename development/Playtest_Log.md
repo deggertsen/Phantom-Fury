@@ -11,8 +11,11 @@ Felt good:
 Felt wrong:
 Confusions (things the tester asked or got wrong without being told):
 Comfort (nausea, strain, boundary):
+Run log (tools/pull_run_log.ps1): missions and tiers flagged under or over their card
 Numbers to try:
 ```
+
+Every finished round is in the headset's run log. Pull it after the session and paste the flagged rows into the entry; [Difficulty_Tuning.md](Difficulty_Tuning.md) says how to turn them into card and tier changes.
 
 ## Standing verdicts (sessions before 2026-10-08, unrecorded)
 

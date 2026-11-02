@@ -574,11 +574,23 @@ static func parse_mission_id(mission_id_value: String) -> Dictionary:
 
 ## Best scores and times are kept per city, district kind, and tier.
 static func record_key(city_id: String, kind: String, tier_id: String) -> String:
-	return DifficultyTier.record_key("world:%s:%s" % [city_id, kind], tier_id)
+	return DifficultyTier.record_key(record_id(city_id, kind), tier_id)
+
+## The mission id GameSettings keeps a district's records under: one per city and kind.
+static func record_id(city_id: String, kind: String) -> String:
+	return "world:%s:%s" % [city_id, kind]
+
+## The id a mission's records live under: a district's city and kind, or an operation's own id.
+static func record_id_for(mission: Dictionary) -> String:
+	var world: Dictionary = mission.get("world", {})
+	if world.is_empty():
+		return String(mission.get("id", ""))
+	return record_id(String(world.get("city_id", "")), String(world.get("kind", KIND_SINGLE)))
 
 ## The estimate behind expected_minutes, made the way the catalog's were (see the note above
-## MissionCatalog._first_light and Known_Issues.md): a kill takes about this much rift health,
-## one kill per spawn interval but never faster than a player's cadence, and every rift costs
+## MissionCatalog._first_light and Known_Issues.md): a kill takes about this much rift health at
+## average punch power, one kill per spawn interval but never faster than a player's cadence, and
+## every rift costs
 ## its opening. Rifts that open together feed the player at once, so a pair is capped by the
 ## cadence rather than summed; a hold rift's own drain adds to the player's.
 const KILL_DAMAGE := 13.0
@@ -666,26 +678,72 @@ static func build_mission(city_data: Dictionary, section_index: int, node: Dicti
 		mission["expected_minutes"] = expected_minutes(mission)
 	return mission
 
-## [low, high] minutes for a mission's waves at Standard: the clean run rounded, and the clean
-## run with half again for misses and dodges, never past the time a hold ends on its own.
+## [low, high] minutes for a mission's card, from its waves as given (the tier already applied, or
+## Standard): the low end is a clean run by a hard puncher (Phantom.POWER_MAX of KILL_DAMAGE per
+## kill), the high end an average puncher's clean run with half again for misses and dodges,
+## never past the time a hold ends on its own. An average clean run (run_seconds) sits between.
+## The developer's 2026-10-24 runs finished under the old low ends, which were the average clean
+## run; punch power (2026-10-13) is why. Timed runs replace this: development/Difficulty_Tuning.md.
 static func expected_minutes(mission: Dictionary) -> Array:
+	var low_seconds := run_seconds(mission, KILL_DAMAGE * HARD_POWER)
+	var high_seconds := run_seconds(mission, KILL_DAMAGE, MISS_ALLOWANCE)
+	if mission.has("boss"):
+		# The card does not say whether the Maw will break, so it covers both.
+		low_seconds = minf(low_seconds, run_seconds(mission, KILL_DAMAGE * HARD_POWER, 1.0, false))
+		high_seconds = maxf(high_seconds, run_seconds(mission, KILL_DAMAGE, MISS_ALLOWANCE, false))
+	var low := maxi(roundi(low_seconds / 60.0), 1)
+	var high := roundi(high_seconds / 60.0)
+	return [low, maxi(high, low + 1)]
+
+## Rift damage a hard punch does against an average one (Phantom.POWER_MAX).
+const HARD_POWER := 1.3
+## Half again for misses, dodges, and possessions on the card's high end.
+const MISS_ALLOWANCE := 1.5
+## The Maw's boss fight (MawBoss): one resolve's worth of work on the anchor this often, on top of
+## its own drain. The cycle of sweeps, slams, volleys, and push-ups leaves about this much room.
+const BOSS_WORK_SECONDS := 4.0
+const BOSS_RETREAT_SECONDS := 2.2
+
+## Seconds a run of the mission takes at `kill_damage` rift damage per kill, with the fighting
+## stretched by `slack` (1 for a clean run). Covers sequences, pairs (max_concurrent), holds that
+## drain on their own, and a mission carrying The Maw's "boss" (Full Resonance), which runs as a
+## Maw that breaks unless `boss_breaks` is false.
+static func run_seconds(mission: Dictionary, kill_damage: float = KILL_DAMAGE, slack: float = 1.0, boss_breaks: bool = true) -> float:
 	var rifts: Array = mission.get("rifts", [])
-	var seconds := estimate_seconds(rifts, int(mission.get("max_concurrent", 1)))
-	var low := maxi(roundi(seconds / 60.0), 1)
-	var high := roundi(seconds * 1.5 / 60.0)
+	var concurrent := int(mission.get("max_concurrent", 1))
+	if mission.has("boss") and boss_breaks:
+		return boss_seconds(mission, kill_damage, slack)
+	return _capped(rifts, estimate_seconds(rifts, concurrent, kill_damage, slack))
+
+## A Maw that breaks: phase one on its share of the rift's health, the turn, then the anchor,
+## which drains on its own in anchor_seconds and faster with work, but never slower.
+static func boss_seconds(mission: Dictionary, kill_damage: float = KILL_DAMAGE, slack: float = 1.0) -> float:
+	var boss: Dictionary = mission.get("boss", {})
+	var share := clampf(float(boss.get("phase_one_scale", 1.0)), 0.1, 1.0)
+	var phase_one: Array = []
+	for wave in mission.get("rifts", []):
+		var copy: Dictionary = (wave as Dictionary).duplicate()
+		copy["health"] = maxi(int(round(float(copy.get("health", 0)) * share)), 1)
+		phase_one.append(copy)
+	var anchor := float(boss.get("anchor", 840))
+	var anchor_seconds := float(boss.get("anchor_seconds", 210.0))
+	var fight := minf(anchor / (anchor / anchor_seconds + kill_damage / BOSS_WORK_SECONDS) * slack, anchor_seconds)
+	return estimate_seconds(phase_one, int(mission.get("max_concurrent", 1)), kill_damage, slack) + MawBoss.TURN_SECONDS + fight + BOSS_RETREAT_SECONDS
+
+## A mission whose every rift drains on its own never runs past the drain.
+static func _capped(rifts: Array, seconds: float) -> float:
 	var ceiling := 0.0
 	for wave in rifts:
 		if float(wave.get("hold_seconds", 0.0)) <= 0.0:
-			ceiling = INF
-			break
+			return seconds
 		ceiling += float(wave.get("hold_seconds", 0.0)) + RIFT_OPENING_SECONDS
-	if ceiling < INF:
-		high = mini(high, roundi(ceiling / 60.0))
-	return [low, maxi(high, low + 1)]
+	return minf(seconds, ceiling)
 
-## Seconds a clean Standard run of these waves takes, estimated as the catalog's times were (see
-## KILL_DAMAGE). Rifts open max_concurrent at a time, in order.
-static func estimate_seconds(rifts: Array, max_concurrent: int = 1) -> float:
+## Seconds a run of these waves takes, estimated as the catalog's times were (see KILL_DAMAGE),
+## at `kill_damage` per kill, with the fighting stretched by `slack`. Rifts open max_concurrent at
+## a time, in order. The director refills a pair's slot as each rift seals rather than waiting
+## for both, but a pair's feed already outruns the kill cadence, so the two come out the same.
+static func estimate_seconds(rifts: Array, max_concurrent: int = 1, kill_damage: float = KILL_DAMAGE, slack: float = 1.0) -> float:
 	var seconds := 0.0
 	var index := 0
 	var group_size := maxi(max_concurrent, 1)
@@ -702,7 +760,7 @@ static func estimate_seconds(rifts: Array, max_concurrent: int = 1) -> float:
 			if hold > 0.0:
 				team_rate += wave_health / hold
 		var kill_interval := maxf(1.0 / spawn_rate, KILL_CADENCE_SECONDS) if spawn_rate > 0.0 else KILL_CADENCE_SECONDS
-		var player_rate := KILL_DAMAGE / kill_interval
+		var player_rate := kill_damage / (kill_interval * maxf(slack, 1.0))
 		seconds += health / (player_rate + team_rate) + RIFT_OPENING_SECONDS * group.size()
 		index += group_size
 	return seconds

@@ -55,6 +55,7 @@ func _ready() -> void:
 	_press(KEY_ESCAPE)
 	await _wait(0.8)
 	await _capture("06-pause")
+	await _capture_live_defeat()
 	await _capture_results()
 	print("PLAY CAPTURE COMPLETE: %s" % _out_dir)
 	get_tree().quit()
@@ -257,22 +258,26 @@ func _hit(phantom: Phantom, hand: StringName, speed: float, on_lure: bool = fals
 	elif lure:
 		at += Vector3(0.0, -0.5, 0.0)
 	phantom.receive_strike({"hand_id": hand, "position": at, "direction": Vector3.FORWARD, "speed": speed})
-## The city map at Full Resonance, then back at the profile's difficulty. The tier is switched in
-## memory only, so the real profile keeps its choice.
+## The world map, the main menu, as the real profile sees it; tiers come from the cities now.
 func _capture_city_tiers() -> void:
 	var flow := _main.get_node("GameFlowController")
-	var settings := get_node_or_null("/root/GameSettings")
-	if settings:
-		var chosen := String(settings.difficulty_tier)
-		settings.difficulty_tier = DifficultyTier.FULL_RESONANCE
-		flow._show_main_menu()
-		await _wait(0.6)
-		await _capture("02-city-full-resonance")
-		settings.difficulty_tier = chosen
-	flow._show_main_menu()
+	flow._show_world_map()
 	await _wait(0.6)
+	await _capture("02-world-map")
 
 ## Results after sealing the junction, from a scratch profile so the real one records nothing.
+## The round just played, ended by the failsafe: GameFlowController builds the real report, with
+## the round's own session stats. A defeat records nothing, so the profile is untouched.
+func _capture_live_defeat() -> void:
+	var round := _main.get_node("RoundController") as RoundController
+	round.resume_round()
+	await _wait(2.0)
+	var life := get_tree().get_first_node_in_group("LifeForceManager") as LifeForceManager
+	life.life_force_depleted.emit()
+	await _wait(0.8)
+	print("PLAY CAPTURE live stats: %s" % round.stats.to_report())
+	await _capture("06b-results-live-defeat")
+
 func _capture_results() -> void:
 	var presenter := _main.get_node("VRMenuPresenter") as VRMenuPresenter
 	var profile: Node = load("res://Scripts/Core/game_settings.gd").new()

@@ -148,7 +148,7 @@ Recommended: A in every boss fight, since it is the boss's own attack, and D not
 
 ### The Maw
 
-**Today.** OP-06, the last of the six operations. One rift at double size (the portal is 8 m across) that pours a steady flood: a phantom every 0.875 s, up to eight live, drawn from all four phantom rules, and 1600 health to seal. Its card estimates 4 to 6 minutes. (The other operations now open twice as many rifts; The Maw stays a single rift.) Missions have no time limit; the bracer counts the elapsed time up, and results record the fastest victory. Chen opens with "One mouth. Twice the teeth. Twice the hunger." and closes with "The Maw is shut. It will remember how long you made it chew."
+**Today.** OP-06, the last of the six operations. One rift at double size (the portal is 8 m across) that pours a steady flood: a phantom every 0.875 s, up to eight live, drawn from all four phantom rules, and 1600 health to seal. Its card estimates 3 to 6 minutes. (The other operations now open twice as many rifts; The Maw stays a single rift.) Missions have no time limit; the bracer counts the elapsed time up, and results record the fastest victory. Chen opens with "One mouth. Twice the teeth. Twice the hunger." and closes with "The Maw is shut. It will remember how long you made it chew."
 
 **As the first boss.** The Maw is that wide because something enormous is trying to come through it. Only its tentacles reach out; the body stays on the far side, because it cannot yet afford our world. That gives the first boss one thing to read, limbs to dodge and punish, and keeps the full creature back for a later reveal. It also keeps the art cost to tentacles rather than a whole creature.
 
@@ -525,12 +525,12 @@ The difficulties exist, chosen beside Deploy on the city map, and the boss is re
 
   | Tier | Speed | Tells | Rift health | Spawn interval | Contact | Movement | Bosses |
   |---|---|---|---|---|---|---|---|
-  | Assist | 0.85 | 1.25 | 0.8 | 1.15 | 0.6 | none; sweeps duck depth at most | no |
+  | Assist | 0.85 | 1.25 | 0.96 | 1.04 | 0.6 | none; sweeps duck depth at most | no |
   | Standard | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | none; sweeps duck depth at most | no |
-  | Operator | 1.12 | 0.85 | 1.15 | 0.9 | 1.25 | none; sweeps duck depth at most | no |
+  | Operator | 1.12 | 0.85 | 1.04 | 0.96 | 1.25 | none; sweeps duck depth at most | no |
   | Full Resonance | 1.0 | 1.0 | 1.1 | 1.0 | 1.0 | squats, jumps, push-ups | yes |
 
-  Speed, tells, health, and contact for Assist and Operator are the proposal's. The spawn interval is new (the proposal had none): Assist spawns 15 % slower and Operator 10 % faster, which offsets their health change so a mission stays about as long as at Standard (0.8 x 1.15 = 0.92; 1.15 x 0.9 = 1.04). Full Resonance keeps the proposal's 1.1 health and Standard's speed and tells. Standard returns every catalog wave unchanged; the validation compares them.
+  Speed, tells, and contact for Assist and Operator are the proposal's. Health and the spawn interval (new; the proposal had none) keep a mission as long as at Standard. The first build used the proposal's health (Assist 0.8, Operator 1.15) offset by the interval (1.15, 0.9), but where the player's own kill cadence sets the pace (pairs, The Maw) the interval cannot offset health, and those missions ran 12 to 20 % off Standard. Since 2026-11-01 both stay near 1 (Assist 0.96 and 1.04, Operator 1.04 and 0.96), so every mission holds its length within 5 %; see [Difficulty_Tuning.md](Difficulty_Tuning.md). Full Resonance keeps the proposal's 1.1 health and Standard's speed and tells. Standard returns every catalog wave unchanged; the validation compares them.
 - **Contact damage** is a wave field, `contact_scale`, set only when the tier changes it. `RiftManager` multiplies the `contact_damage` of every phantom it spawns and every attacker added to it (a boss's sweep or slam), so the scaled amount reaches `LifeForceManager` by the usual `player_contact` path. A possession costs 12 at Assist, 20 at Standard and Full Resonance, 25 at Operator.
 - **Flags.** `duck_only` caps any wave's `squat_depth` at 0.12 (decision 2); Full Resonance sets it to 0.20. `squats`, `jumps`, `push_ups`, and `bosses` are true only at Full Resonance.
 - **Movement at Full Resonance comes from the boss.** `movement_weight` and `movement_cap_per_min` are not built, and ordinary rifts send no sweeps at any tier. A first build added a squat-depth sweep to every Full Resonance pool (8 s apart at least); David removed it the same day, because nothing in the fiction swings a blade from an ordinary rift ("bosses carry the movements"). A wave that already has a sweep (the debug Sweep Drill) asks for a squat at Full Resonance. If movement is wanted outside bosses before the war map, the candidate with a source is a short tentacle lash from the rift. A boss's escort is never a sweep. Skitters, seal rituals, and `rest_after_ritual` are not built.

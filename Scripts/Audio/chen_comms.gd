@@ -283,7 +283,8 @@ func _begin_mission() -> void:
 	_mission_id = String(_round.current_mission().get("id", ""))
 	var settings := get_node_or_null("/root/GameSettings")
 	var cleared: bool = settings != null and settings.has_cleared_mission(_mission_id)
-	_best_before = settings.best_score(_mission_id, _round.current_tier()) if settings else 0
+	# A district keeps its records per city and kind, not per district.
+	_best_before = settings.best_score(WorldMap.record_id_for(_round.current_mission()), _round.current_tier()) if settings else 0
 	say(_mission_start_event(cleared))
 
 ## In the countdown, a difficulty that asks more of the body gets its own line before the mission's:

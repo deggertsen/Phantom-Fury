@@ -53,6 +53,7 @@ func _add_wrap_panel(at: Vector2, panel_size: Vector2) -> VRWrapPanel:
 func _capture_results() -> void:
 	var cleared := _profile(["first_light", "widen_the_ring", "chens_gambit"])
 	cleared.best_times["chens_gambit"] = 252.0
+	cleared.best_scores["chens_gambit"] = 31400
 	_show_results(_report(cleared, &"victory", "chens_gambit", 2, "double_breach", 252.0, 280.0, "Chen: It knows your resonance now. This was the opening move. Not the end of the war."))
 	await _capture("results.png")
 	_show_results(_report(cleared, &"defeat", "double_breach", -1, "", 0.0, 0.0, "Chen: The pair drank you. Take the left door before their scouts overlap."))
@@ -74,9 +75,12 @@ func _report(profile: Node, outcome: StringName, mission_id: String, sealed_befo
 	var by_id := {}
 	for entry in entries:
 		by_id[entry.get("id", "")] = entry
+	var score := 31400 if outcome == &"victory" else 4120
+	var best_score := int(profile.best_score(mission_id))
+	var thresholds := MissionMedals.operation_thresholds(mission_id, DifficultyTier.STANDARD)
 	return {
 		"outcome": outcome,
-		"score": 12840 if outcome == &"victory" else 4120,
+		"score": score,
 		"debrief": debrief,
 		"seconds": seconds,
 		"previous_best": previous_best,
@@ -87,9 +91,30 @@ func _report(profile: Node, outcome: StringName, mission_id: String, sealed_befo
 		"sealed_before": sealed_before,
 		"entries": entries,
 		"offer_training": outcome == &"defeat",
+		"stats": _stats(outcome),
+		"medal": MissionMedals.medal_for(score, thresholds) if outcome == &"victory" else "",
+		"previous_best_score": 28900 if outcome == &"victory" else 0,
+		"best_score": best_score,
+		"best_medal": MissionMedals.medal_for(best_score, thresholds),
 	}
 
-## A settings object with these operations sealed and the first two timed, never saved to disk.
+## A round's SessionStats as results carry them: a strong victory, or a defeat partway in.
+func _stats(outcome: StringName) -> Dictionary:
+	var stats := SessionStats.new()
+	var victory := outcome == &"victory"
+	stats.punches = 186 if victory else 74
+	stats.rejected = 9 if victory else 11
+	stats.wrong_hand = 3 if victory else 5
+	stats.by_variant = {"yellow": 34, "blue": 31, "green": 18, "pink": 15} if victory else {"yellow": 14, "blue": 12, "green": 6, "pink": 4}
+	stats.by_kind = {"two_hand_block": 18, "dodge": 15} if victory else {"two_hand_block": 6, "dodge": 4}
+	stats.crits = 27 if victory else 6
+	stats.misses = 4 if victory else 13
+	stats.longest_chain = 41 if victory else 9
+	stats.rifts_sealed = 12 if victory else 3
+	stats.active_seconds = 252.0 if victory else 131.0
+	return stats.to_report()
+
+## A settings object with these operations sealed and the first two timed and scored, never saved to disk.
 func _profile(cleared: Array) -> Node:
 	var profile: Node = load("res://Scripts/Core/game_settings.gd").new()
 	profile.cleared_missions = PackedStringArray(cleared)
@@ -99,6 +124,13 @@ func _profile(cleared: Array) -> Node:
 	if "widen_the_ring" in cleared:
 		times["widen_the_ring"] = 342.0
 	profile.best_times = times
+	# First Light at gold, Widen the Ring at silver, so the map and cards show both.
+	var scores := {}
+	if "first_light" in cleared:
+		scores["first_light"] = int(MissionMedals.operation_thresholds("first_light", DifficultyTier.STANDARD)[MissionMedals.GOLD]) + 240
+	if "widen_the_ring" in cleared:
+		scores["widen_the_ring"] = int(MissionMedals.operation_thresholds("widen_the_ring", DifficultyTier.STANDARD)[MissionMedals.SILVER]) + 480
+	profile.best_scores = scores
 	return profile
 
 # --- World map -----------------------------------------------------------------------------
@@ -175,6 +207,7 @@ func _capture_world() -> void:
 	await _capture("city-operations.png")
 	var first := String(city["selected_id"])
 	var sealed_city := _city(tokyo, [first])
+	_with_best(sealed_city, 268.0, 9860)
 	_left.show_operations_status(sealed_city)
 	_center.show_operations_map(sealed_city)
 	_right.show_district_detail(sealed_city)
@@ -194,6 +227,7 @@ func _capture_world() -> void:
 		await _capture("city-operations-maw.png")
 	# Results after the first seal are the city map: the next district picked, Deploy leading.
 	var after_seal := _city(tokyo, [first])
+	_with_best(after_seal, 241.0, 12400)
 	var report := {
 		"outcome": &"victory", "score": 9860, "debrief": "Chen: %s is shut. Pick the next district when you are ready." % city["node"]["name"],
 		"seconds": 287.0, "previous_best": 0.0, "best_seconds": 287.0, "tier": city["tier"],
@@ -205,11 +239,14 @@ func _capture_world() -> void:
 		"picked": false,
 		"offer_training": false,
 	}
+	_with_medals(report, String(city["node"]["kind"]), 0, 0)
 	_show_world_results(report)
 	await _capture("world-results.png")
 	# A defeat: Retry leads, the open districts still pressable.
 	report["outcome"] = &"defeat"
 	report["score"] = 3120
+	report["stats"] = _stats(&"defeat")
+	report["medal"] = ""
 	report["debrief"] = "Chen: The failsafe fired. %s held. Rest, then go back in." % city["node"]["name"]
 	report["offer_training"] = true
 	report["world"]["sealed_after"] = []
@@ -238,9 +275,27 @@ func _capture_world() -> void:
 		"picked": false,
 		"offer_training": false,
 	}
+	_with_medals(report, String(city["node"]["kind"]), 9860, 11240)
 	_show_world_results(report)
 	await _capture("world-results-operation.png")
 	profile.free()
+
+## A world report's stats and medals, as GameFlowController._with_medals adds them, for a district
+## of this kind whose best score was `previous` before the round (0 for none).
+func _with_medals(report: Dictionary, kind: String, previous: int, best: int) -> void:
+	var thresholds := MissionMedals.world_thresholds(kind, String(report["tier"]))
+	var score := int(report["score"])
+	report["stats"] = _stats(report["outcome"])
+	report["medal"] = MissionMedals.medal_for(score, thresholds) if report["outcome"] == &"victory" else ""
+	report["previous_best_score"] = previous
+	report["best_score"] = maxi(best, score)
+	report["best_medal"] = MissionMedals.medal_for(maxi(best, score), thresholds)
+
+## A district card with a best time and score at its tier, and the medal the score earned.
+func _with_best(city: Dictionary, seconds: float, score: int) -> void:
+	city["best_seconds"] = seconds
+	city["best_score"] = score
+	city["medal"] = MissionMedals.medal_for(score, MissionMedals.world_thresholds(String(city["node"].get("kind", WorldMap.KIND_SINGLE)), String(city["tier"])))
 
 func _show_world_results(report: Dictionary) -> void:
 	_left.show_world_report(report)
