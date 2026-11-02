@@ -1,6 +1,5 @@
 extends Node
 
-const STATE_MENU := &"menu"
 ## The Training Complete panel, in the chamber.
 const STATE_TUTORIAL := &"tutorial"
 ## Chen's training chamber is running; the menu is hidden.
@@ -11,15 +10,15 @@ const STATE_SETTINGS := &"settings"
 const STATE_RESULTS := &"results"
 const STATE_ABORT_CONFIRM := &"abort_confirm"
 const STATE_RESET_CONFIRM := &"reset_confirm"
-## The world front: pick a city.
+## The world front: pick a city. This is the main menu; the game boots here.
 const STATE_WORLD := &"world"
 ## One section of a city: pick a district and deploy.
 const STATE_CITY := &"city"
-## Debug builds: --mission=the_maw_boss, like B in the main menu, deploys The Maw at Full Resonance.
+## Debug builds: --mission=the_maw_boss, like B on the world map, deploys The Maw at Full Resonance.
 const BOSS_SHORTCUT := "the_maw_boss"
 
-var _state: StringName = STATE_MENU
-var _previous_state: StringName = STATE_MENU
+var _state: StringName = STATE_WORLD
+var _previous_state: StringName = STATE_WORLD
 var _round: RoundController
 var _player: Node3D
 var _presenter: VRMenuPresenter
@@ -47,8 +46,6 @@ var _last_debrief: String = ""
 var _next_mission_id: String = ""
 ## How many sites were sealed before the round, so results can show the front moving.
 var _sealed_before: int = -1
-## The site picked on the city map. Deploy starts it; "" falls back to the next live site.
-var _selected_site_id: String = ""
 ## The world map's difficulty filter ("all", "easy", "medium", "hard") and the city it has picked.
 var _world_filter: String = "all"
 var _selected_city_id: String = ""
@@ -98,7 +95,7 @@ func _ready() -> void:
 	elif pending != "" and not MissionCatalog.get_mission(pending).is_empty():
 		_start_mission(pending, _command_tier)
 	else:
-		_show_main_menu()
+		_show_world_map()
 		_arm_menu_input_after_release()
 
 ## Debug builds: --mission=<id> skips the menu and deploys straight into that operation, including
@@ -175,17 +172,6 @@ func _on_menu_action(action: StringName) -> void:
 			return
 		_menu_input_armed = false
 		get_tree().create_timer(0.25).timeout.connect(_arm_menu_input_after_release)
-	if String(action).begins_with("site_"):
-		var site_id := String(action).trim_prefix("site_")
-		if MissionCatalog.is_unlocked(site_id, _settings):
-			_selected_site_id = site_id
-		_show_main_menu()
-		return
-	if String(action).begins_with("tier_"):
-		if _settings:
-			_settings.set_difficulty_tier(String(action).trim_prefix("tier_"))
-		_show_main_menu()
-		return
 	if String(action).begins_with("world_city_"):
 		_selected_city_id = String(action).trim_prefix("world_city_")
 		_show_world_map()
@@ -218,9 +204,7 @@ func _on_menu_action(action: StringName) -> void:
 				_start_world_mission()
 			elif _state == STATE_CITY:
 				_start_world_mission()
-			else:
-				_start_mission(_selected_site_id)
-		&"world", &"world_back":
+		&"world_back":
 			_world_region_id = ""
 			_show_world_map()
 		&"city_world":
@@ -239,8 +223,6 @@ func _on_menu_action(action: StringName) -> void:
 			_menu_input_armed = false
 			_sync_menu_trigger_baseline()
 			_arm_menu_input_after_release()
-		&"campaign":
-			_show_main_menu()
 		&"assist_on", &"assist_off":
 			if _settings:
 				_settings.set_world_assist(action == &"assist_on")
@@ -256,7 +238,7 @@ func _on_menu_action(action: StringName) -> void:
 			_results_action_locked = true
 			_start_training()
 		&"settings":
-			_show_settings(_state if _state in [STATE_WORLD, STATE_CITY, STATE_RESULTS] else STATE_MENU)
+			_show_settings(_state if _state in [STATE_WORLD, STATE_CITY, STATE_RESULTS] else STATE_WORLD)
 		&"music_down":
 			if _settings:
 				_settings.adjust_music(-1)
@@ -318,17 +300,15 @@ func _on_menu_action(action: StringName) -> void:
 			elif _previous_state == STATE_CITY:
 				_show_city_operations()
 			else:
-				_show_main_menu()
+				_show_world_map()
 		&"training_deploy":
-			if _tutorial:
-				_tutorial.stop()
-			_start_mission("")
+			_deploy_from_training()
 		&"training_replay":
 			_start_training()
 		&"training_menu":
 			if _tutorial:
 				_tutorial.stop()
-			_show_main_menu()
+			_show_world_map()
 		&"end_training":
 			_end_training()
 		&"resume":
@@ -350,7 +330,7 @@ func _on_menu_action(action: StringName) -> void:
 			_results_action_locked = true
 			_menu_input_armed = false
 			if action == &"results_menu":
-				_return_to_city_map()
+				_return_to_world()
 			else:
 				var mission_id := _active_mission_id
 				if action == &"next_mission" and _settings:
@@ -376,7 +356,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_ENTER, KEY_SPACE:
-				if _state == STATE_MENU:
+				if _state == STATE_CITY:
 					_on_menu_action(&"deploy")
 				elif _state == STATE_TUTORIAL:
 					_on_menu_action(&"training_deploy")
@@ -389,7 +369,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_on_menu_action(&"training")
 			KEY_B:
 				# Debug builds only: The Maw at Full Resonance, whatever is unlocked. Shift forces a break.
-				if OS.is_debug_build() and _state == STATE_MENU:
+				if OS.is_debug_build() and _state == STATE_WORLD:
 					MawBoss.force_next_break = event.shift_pressed
 					_start_boss_shortcut()
 			KEY_P:
@@ -415,28 +395,17 @@ func _unhandled_input(event: InputEvent) -> void:
 				elif _state == STATE_WORLD and _world_region_id != "":
 					_world_region_id = ""
 					_show_world_map()
-				elif _state == STATE_WORLD:
-					_show_main_menu()
 				elif _state in [STATE_SETTINGS, STATE_RESULTS] and not _paused_training:
-					_show_main_menu()
+					_show_world_map()
 
-## The main menu is the breach city: pick a site and a difficulty, then deploy.
-func _show_main_menu() -> void:
-	_state = STATE_MENU
-	_set_menu_visible(true)
-	if _selected_site_id == "" or not MissionCatalog.is_unlocked(_selected_site_id, _settings):
-		_selected_site_id = MissionCatalog.next_unlocked_id(_settings)
-	if _presenter:
-		var training_first: bool = _settings != null and not _settings.tutorial_completed
-		_presenter.show_city_map(MissionCatalog.operation_entries(_settings), _selected_site_id, MissionCatalog.tier_from(_settings), training_first)
-
-## Deploys a mission at the chosen difficulty, or at `tier_override` when one is given.
-## A debug run skips the unlock chain and records nothing.
-func _start_mission(mission_id: String = "", tier_override: String = "", debug_run: bool = false) -> void:
-	var resolved_id := mission_id if mission_id != "" else MissionCatalog.next_unlocked_id(_settings)
+## Deploys a catalog operation at the chosen difficulty, or at `tier_override` when one is given.
+## Only debug deploys reach these now (--mission=<id>, the B shortcut, a pending id); the menus
+## deploy world missions. A debug run skips the unlock chain and records nothing.
+func _start_mission(mission_id: String, tier_override: String = "", debug_run: bool = false) -> void:
+	var resolved_id := mission_id
 	var mission := MissionCatalog.get_mission(resolved_id)
 	if mission.is_empty() or not (debug_run or MissionCatalog.is_unlocked(resolved_id, _settings)):
-		_show_main_menu()
+		_show_world_map()
 		return
 	_active_mission_id = resolved_id
 	if tier_override != "":
@@ -480,6 +449,7 @@ func _world_status(entries: Array[Dictionary]) -> Dictionary:
 		"assist": _settings != null and _settings.world_assist,
 		"region": _world_region_id,
 		"zoom_from": _zoom_from_city_id,
+		"zones": WorldMap.zone_polygons(_settings),
 	}
 
 ## The city a region opens on when the picked one is elsewhere: home, then the most fought-over
@@ -683,7 +653,7 @@ func _finish_world_mission(victory: bool, score: int) -> Dictionary:
 ## records no clear, score, or time, though its break counts toward the break odds.
 func _start_boss_shortcut() -> void:
 	if not OS.is_debug_build():
-		_show_main_menu()
+		_show_world_map()
 		return
 	_start_mission("the_maw", DifficultyTier.FULL_RESONANCE, true)
 
@@ -710,7 +680,29 @@ func _on_training_finished() -> void:
 func _render_training_complete() -> void:
 	_set_menu_visible(true)
 	if _presenter:
-		_presenter.show_training_complete(MissionCatalog.deploy_detail(_settings))
+		_presenter.show_training_complete(_training_deploy_detail())
+
+## The Training Complete panel's line under TO THE FRONT: the home city, its state, and the tier
+## it plays at, so the recruit knows what they are walking into.
+func _training_deploy_detail() -> String:
+	var home := WorldMap.city_entry(_settings, WorldMap.home_city_id())
+	if home.is_empty():
+		return "THE WORLD MAP"
+	var tier := WorldMap.tier_for(String(home.get("state", "")), _settings != null and _settings.world_assist)
+	var parts := [String(home.get("name", "")).to_upper(), String(home.get("state_label", ""))]
+	if tier != "":
+		parts.append(DifficultyTier.label(tier))
+	return "  •  ".join(parts)
+
+## TO THE FRONT from Training Complete: straight into the home city's section, with its region
+## remembered so the way back to the world lands there.
+func _deploy_from_training() -> void:
+	if _tutorial:
+		_tutorial.stop()
+	_selected_city_id = WorldMap.home_city_id()
+	_world_region_id = WorldMap.region_of(_selected_city_id)
+	_selected_node_id = ""
+	_show_city_operations()
 
 ## End Training from pause. Nobody is made to sit through all of it: ending counts as done.
 func _end_training() -> void:
@@ -720,7 +712,7 @@ func _end_training() -> void:
 	if _round:
 		_round.abandon_round()
 	_mark_training_complete()
-	_show_main_menu()
+	_show_world_map()
 
 func _mark_training_complete() -> void:
 	if _settings:
@@ -803,8 +795,6 @@ func _render_settings() -> void:
 
 func restore_current_menu() -> void:
 	match _state:
-		STATE_MENU:
-			_show_main_menu()
 		STATE_TUTORIAL:
 			_render_training_complete()
 		STATE_SETTINGS:
@@ -977,15 +967,13 @@ func _action_belongs_to_state(action: StringName) -> bool:
 				return true
 			return action in [&"retry", &"next_mission", &"results_menu", &"results_training", &"results_world", &"settings"]
 		STATE_WORLD:
-			return String(action).begins_with("world_city_") or String(action).begins_with("world_filter_") or String(action).begins_with("world_region_") or action in [&"world_open", &"world_back", &"campaign", &"training", &"settings"]
+			return String(action).begins_with("world_city_") or String(action).begins_with("world_filter_") or String(action).begins_with("world_region_") or action in [&"world_open", &"world_back", &"training", &"settings"]
 		STATE_CITY:
 			return String(action).begins_with("node_") or action in [&"deploy", &"city_world", &"assist_on", &"assist_off", &"settings"]
 		STATE_SETTINGS:
 			return action in [&"music_down", &"music_up", &"effects_down", &"effects_up", &"haptics_down", &"haptics_up", &"own_music_off", &"own_music_on", &"settings_flashes_off", &"settings_flashes_on", &"reset_progress", &"settings_back"]
 		STATE_RESET_CONFIRM:
 			return action in [&"reset_cancel", &"reset_confirm"]
-		STATE_MENU:
-			return String(action).begins_with("site_") or String(action).begins_with("tier_") or action in [&"deploy", &"training", &"settings", &"world"]
 		STATE_TUTORIAL:
 			return action in [&"training_deploy", &"training_replay", &"training_menu"]
 		STATE_PAUSED:
@@ -1047,7 +1035,7 @@ func _restart_mission(mission_id: String) -> void:
 	var mission := MissionCatalog.get_mission(mission_id)
 	if mission.is_empty() or _round == null or not (_debug_run or MissionCatalog.is_unlocked(mission_id, _settings)):
 		_results_action_locked = false
-		_return_to_city_map()
+		_return_to_world()
 		return
 	# Retry and Next keep the tier the last mission was played at.
 	_active_mission_id = mission_id
@@ -1062,11 +1050,10 @@ func _leave_results() -> void:
 		_round.abandon_round()
 	_results_action_locked = false
 
-## Back from results, the map selects the next live site again, which a clear may have just opened.
-func _return_to_city_map() -> void:
+## Back from a catalog operation's results (debug deploys) to the world.
+func _return_to_world() -> void:
 	_leave_results()
-	_selected_site_id = ""
-	_show_main_menu()
+	_show_world_map()
 	_menu_input_armed = false
 	_sync_menu_trigger_baseline()
 	_arm_menu_input_after_release()

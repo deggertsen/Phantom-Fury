@@ -51,127 +51,10 @@ func _begin_wrap(accent: Color, margin: int = 18) -> void:
 	_margin.add_theme_constant_override("margin_bottom", margin)
 	_content.add_theme_constant_override("separation", 0 if margin == 0 else 10)
 
-# --- City map: left -------------------------------------------------------------------------
-
-## The city's progress, a new recruit's nudge toward training, then Training and Settings.
-func show_city_status(entries: Array[Dictionary], training_first: bool = false) -> void:
-	_begin_wrap(COLOR_GREEN)
-	var sealed := CityMap.sealed_count(entries)
-	_content.add_child(_label("BREACH ZONE", 16, COLOR_MUTED, true))
-	_content.add_child(_label(CITY_NAME, 32, COLOR_TEXT, true))
-	_content.add_child(_percent_row(-1, sealed, entries.size()))
-	_content.add_child(_sealed_bar(entries, ""))
-	var next := _first_live(entries)
-	var progress := "%d of %d sites sealed." % [sealed, entries.size()]
-	if not next.is_empty():
-		progress += " Seal %s to push the line." % next.get("title", "")
-	elif sealed >= entries.size():
-		progress += " The city is reclaimed."
-	_content.add_child(_wrapped(progress, 17, COLOR_MUTED))
-	_content.add_child(_divider())
-	if training_first:
-		_content.add_child(_label("NEW RECRUIT", 20, COLOR_TEXT, true))
-		_content.add_child(_wrapped("Start with Dr. Chen's training chamber. About five minutes.", 17, COLOR_MUTED))
-	_content.add_child(_spacer())
-	var training := _make_action_button(
-		&"training",
-		"◈  TRAINING CHAMBER\n%s" % ("Recommended first" if training_first else "Replay the walkthrough"),
-		COLOR_VIOLET,
-		Vector2(0, 70),
-		training_first
-	)
-	_compact_menu_button(training, 70.0)
-	_content.add_child(training)
-	var world := _make_action_button(&"world", "◎  WORLD MAP", COLOR_MAGENTA, Vector2(0, 60))
-	var settings := _make_action_button(&"settings", "⌁  SETTINGS", COLOR_BLUE, Vector2(0, 60))
-	for button in [world, settings]:
-		_compact_menu_button(button, 60.0)
-		_tight_sides(button, 8)
-	_content.add_child(_button_pair(world, settings))
-	_content.add_child(_hint())
-
-# --- City map: center -----------------------------------------------------------------------
-
-func show_city_map(entries: Array[Dictionary], selected_id: String) -> void:
-	_begin_wrap(COLOR_MAGENTA, 0)
-	var header := MarginContainer.new()
-	for side in ["margin_left", "margin_right"]:
-		header.add_theme_constant_override(side, 18)
-	header.add_theme_constant_override("margin_top", 10)
-	header.add_theme_constant_override("margin_bottom", 10)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	header.add_child(row)
-	var title := _label("PICK A SITE", 18, COLOR_TEXT, true)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(title)
-	row.add_child(_label("● SEALED", 16, COLOR_GREEN, true))
-	row.add_child(_label("● LIVE", 16, COLOR_MAGENTA, true))
-	row.add_child(_label("○ BEHIND THE LINE", 16, COLOR_MUTED, true))
-	_content.add_child(header)
-	_content.add_child(_map(entries, selected_id, true))
-
-# --- City map: right ------------------------------------------------------------------------
-
-## The chosen site, the difficulty it will play at, and Deploy in that difficulty's color.
-func show_site_detail(entry: Dictionary, tier_id: String, training_first: bool = false) -> void:
-	var tier := DifficultyTier.resolve(tier_id)
-	var tier_color := _tier_color(tier)
-	_begin_wrap(tier_color)
-	# A little tighter than the other panels, so a best score and medal fit with Full Resonance's blurb.
-	_content.add_theme_constant_override("separation", 8)
-	var cleared: bool = entry.get("cleared", false)
-	_content.add_child(_label(
-		"%s  •  %s" % [entry.get("codename", ""), "SEALED" if cleared else "LIVE"],
-		16,
-		COLOR_GREEN if cleared else Color("ff8bdd"),
-		true
-	))
-	var title := _wrapped(String(entry.get("title", "")), 30, COLOR_TEXT, true)
-	_content.add_child(title)
-	var summary := _wrapped(String(entry.get("summary", "")), 17, Color("c4d3e4"))
-	summary.max_lines_visible = 3
-	summary.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_content.add_child(summary)
-	var meta := MissionCatalog.expected_minutes_text(entry)
-	var best := float(entry.get("best_seconds", 0.0))
-	if best > 0.0:
-		meta += "  •  YOUR BEST %s" % _clock(best)
-	_content.add_child(_label(meta, 17, COLOR_TEXT, true))
-	if int(entry.get("best_score", 0)) > 0:
-		_content.add_child(_best_score_line(int(entry["best_score"]), String(entry.get("medal", ""))))
-	_content.add_child(_label("DIFFICULTY", 16, COLOR_MUTED, true))
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
-	for option in DifficultyTier.ORDER:
-		var chosen: bool = option == tier
-		var text := "%s%s\n%s" % ["● " if chosen else "", SHORT_TIER_LABELS.get(option, DifficultyTier.label(option)), _pips(option)]
-		var button := _make_action_button(StringName("tier_%s" % option), text, _tier_color(option), Vector2(0, 60), chosen)
-		_compact_menu_button(button, 60.0)
-		button.add_theme_font_size_override("font_size", 17)
-		_tight_sides(button, 8)
-		grid.add_child(button)
-	_content.add_child(grid)
-	var blurb := _wrapped(DifficultyTier.blurb(tier), 17, tier_color)
-	_content.add_child(blurb)
-	_content.add_child(_spacer())
-	# The time is on the meta line above; the button names only the difficulty, so it fits.
-	var deploy_line := "TRAINING RECOMMENDED FIRST" if training_first else DifficultyTier.label(tier)
-	if training_first:
-		var deploy := _make_action_button(&"deploy", "DEPLOY\n%s" % deploy_line, tier_color, Vector2(0, 92))
-		deploy.add_theme_font_size_override("font_size", 17)
-		_tight_sides(deploy, 8)
-		_content.add_child(deploy)
-	else:
-		_content.add_child(_make_solid_button(&"deploy", "DEPLOY\n%s" % deploy_line, tier_color, 92.0))
-
-# --- Results --------------------------------------------------------------------------------
-# report: outcome, score, debrief, seconds, previous_best, best_seconds, tier, mission (entry),
-# sealed_before, entries (after the round), next (entry, or {}), offer_training. Both kinds of
-# results also carry stats (SessionStats.to_report), medal (this round's, "" after a defeat),
-# previous_best_score, best_score, and best_medal (MissionMedals, at the tier played).
+# --- Results for a catalog operation ---------------------------------------------------------
+# Only debug deploys (--mission=<id>, the B shortcut) reach these now; the world's results are
+# further down. report: outcome, score, debrief, seconds, previous_best, best_seconds, tier,
+# mission (entry), sealed_before, entries (after the round), next (entry, or {}), offer_training.
 
 ## Left: what the round did to the city, the round's workout, and the bests at the tier played.
 func show_city_report(report: Dictionary) -> void:
@@ -626,6 +509,7 @@ func show_world_map(entries: Array[Dictionary], selected_id: String, world: Dict
 	row.add_child(_label("● MEDIUM", 14, _state_color(WorldMap.STATE_DANGER), true))
 	row.add_child(_label("● HARD", 14, _state_color(WorldMap.STATE_OVERRUN), true))
 	row.add_child(_label("▨ CONSUMED", 14, _state_color(WorldMap.STATE_CONSUMED), true))
+	row.add_child(_label("◎ LIBERATED", 14, _state_color(WorldMap.STATE_THREATENED), true))
 	_content.add_child(header)
 	if view == null:
 		view = WorldMapView.new()
@@ -638,14 +522,14 @@ func show_world_map(entries: Array[Dictionary], selected_id: String, world: Dict
 			view.start_at_city(String(world["zoom_from"]))
 		_world_view = view
 	_content.add_child(view)
-	view.show_world(entries, selected_id, String(world.get("filter", "all")), String(world.get("home_id", "")), true, region_id)
+	view.show_world(entries, selected_id, String(world.get("filter", "all")), String(world.get("home_id", "")), true, region_id, world.get("zones", {}))
 	var foot := MarginContainer.new()
 	for side in ["margin_left", "margin_right"]:
 		foot.add_theme_constant_override(side, 18)
 	foot.add_theme_constant_override("margin_top", 6)
 	foot.add_theme_constant_override("margin_bottom", 10)
 	if region_id == "":
-		foot.add_child(_wrapped("The magenta line is the front; the arrows show where it is pushing. Point at a region to zoom in.", 15, COLOR_MUTED))
+		foot.add_child(_wrapped("The magenta line is the front. Every operation completed behind it pushes it back toward the tear. Point at a region to zoom in.", 15, COLOR_MUTED))
 	else:
 		var foot_row := HBoxContainer.new()
 		foot_row.add_theme_constant_override("separation", 14)
@@ -675,10 +559,13 @@ func world_map_view() -> WorldMapView:
 ## Right: the picked city and Open, or why it cannot be opened.
 func show_world_city(entry: Dictionary, world: Dictionary) -> void:
 	var state := String(entry.get("state", WorldMap.STATE_SAFE))
-	var color := _state_color(state)
+	var liberated: bool = entry.get("liberated", false)
+	var color := _state_color(WorldMap.STATE_THREATENED) if liberated else _state_color(state)
 	_begin_wrap(color)
 	var where := "behind the front" if state == WorldMap.STATE_CONSUMED else ("far from any front" if state == WorldMap.STATE_SAFE else "about %d km from the front" % WorldMap.kilometers(float(entry.get("distance", 0.0))))
-	var eyebrow := "%s  •  %s" % [entry.get("state_label", ""), entry.get("difficulty_label", "")]
+	if liberated:
+		where = "liberated; its operations pushed the front back"
+	var eyebrow := "LIBERATED" if liberated else "%s  •  %s" % [entry.get("state_label", ""), entry.get("difficulty_label", "")]
 	if entry.get("id", "") == world.get("home_id", ""):
 		eyebrow += "  •  HOME"
 	_content.add_child(_wrapped(eyebrow, 15, color, true))
@@ -689,7 +576,7 @@ func show_world_city(entry: Dictionary, world: Dictionary) -> void:
 	blurb.max_lines_visible = 2
 	blurb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_content.add_child(blurb)
-	var tier := WorldMap.tier_for(state, bool(world.get("assist", false)))
+	var tier := "" if liberated else WorldMap.tier_for(state, bool(world.get("assist", false)))
 	_content.add_child(_facts([
 		["LIBERATION", "%d%%" % int(entry.get("liberation", 0)), Color("7fe3ff")],
 		["RESISTANCE", String(entry.get("resistance", "NONE")), COLOR_TEXT],
@@ -704,14 +591,10 @@ func show_world_city(entry: Dictionary, world: Dictionary) -> void:
 	if entry.get("playable", false) and not entry.get("liberated", false):
 		_content.add_child(_make_solid_button(&"world_open", "OPEN\n%s" % String(entry.get("name", "")).to_upper(), color, 92.0))
 	else:
-		var reason := "LIBERATED" if entry.get("liberated", false) else String(entry.get("difficulty_label", ""))
+		var reason := "LIBERATED" if liberated else String(entry.get("difficulty_label", ""))
 		var button := _make_action_button(&"world_open", reason, COLOR_MUTED, Vector2(0, 70))
 		button.disabled = true
 		_content.add_child(button)
-	if entry.get("home", false):
-		var campaign := _make_action_button(&"campaign", "◆  BREACH NIGHT", COLOR_AMBER, Vector2(0, 44))
-		_compact_menu_button(campaign, 44.0)
-		_content.add_child(campaign)
 
 ## Rows of [eyebrow, value, color] or [eyebrow, value, color, medal]: the eyebrow at the left, the
 ## value flush right with the medal before it, a rule between rows.

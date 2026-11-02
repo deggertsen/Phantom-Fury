@@ -2,8 +2,10 @@ extends Control
 class_name WorldMapView
 
 ## The world front, drawn: Natural Earth coastlines, the two tears' ground hatched over the land,
-## the front as a magenta line with arrows where it pushes, the tears ringed, and every city as a
-## marker whose color is its state. A difficulty filter dims the cities that do not match.
+## the front as a magenta line, the tears ringed, and every city as a marker whose color is its
+## state, with a cyan ring on a liberated one. A difficulty filter dims the cities that do not
+## match. The fronts come from WorldMap.zone_polygons for the player's war; nothing here moves
+## them.
 ## The view is a window onto the projected map. At the whole world the regions are the buttons;
 ## zoomed to a region its cities are. Opening a city closes the window in on it. The window
 ## eases between boxes, and the buttons come back only once it settles. Lines and markers keep
@@ -36,13 +38,17 @@ const STATE_COLORS := {
 	WorldMap.STATE_CONSUMED: Color("1a1024"),
 }
 
-## Built once: the coastline packed and closed, the land as one mesh in projected units, and
-## each tear's ground clipped to the land. The land is a mesh drawn through the window's
-## transform because a 1300-point polygon at a city's zoom, in screen pixels, did not draw.
+## Built once: the coastline packed and closed, and the land as one mesh in projected units. The
+## land is a mesh drawn through the window's transform because a 1300-point polygon at a city's
+## zoom, in screen pixels, did not draw.
 static var _land: ArrayMesh
 static var _rings: Array[PackedVector2Array] = []
 static var _outlines: Array[PackedVector2Array] = []
-static var _consumed_pieces: Array[PackedVector2Array] = []
+
+## The fronts shown (WorldMap.zone_polygons), and each one's ground clipped to the land, rebuilt
+## when the fronts change.
+var _zones: Dictionary = {}
+var _consumed_pieces: Array[PackedVector2Array] = []
 
 var _entries: Array[Dictionary] = []
 var _selected_id: String = ""
@@ -73,8 +79,9 @@ func _init() -> void:
 	set_process(false)
 
 ## entries are WorldMap.city_entries. filter is "all", "easy", "medium", or "hard". region_id is a
-## WorldMap region, or "" for the whole world. A change of region eases the window to it.
-func show_world(entries: Array[Dictionary], selected_id: String, filter: String = "all", home_id: String = "", interactive: bool = true, region_id: String = "") -> void:
+## WorldMap region, or "" for the whole world. A change of region eases the window to it. zones
+## are the fronts to draw (WorldMap.zone_polygons for the profile); empty draws the authored ones.
+func show_world(entries: Array[Dictionary], selected_id: String, filter: String = "all", home_id: String = "", interactive: bool = true, region_id: String = "", zones: Dictionary = {}) -> void:
 	_entries = entries
 	_selected_id = selected_id
 	_filter = filter
@@ -82,6 +89,7 @@ func show_world(entries: Array[Dictionary], selected_id: String, filter: String 
 	_interactive = interactive
 	_region_id = region_id
 	_focus_city_id = ""
+	_set_zones(zones if not zones.is_empty() else WorldMap.zone_polygons())
 	var target := _region_box(region_id)
 	if not _has_box:
 		_jump(target)
@@ -161,9 +169,16 @@ static func _prepare_geometry() -> void:
 	arrays[Mesh.ARRAY_INDEX] = indices
 	_land = ArrayMesh.new()
 	_land.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var zones := WorldMap.zone_polygons()
-	for key in zones:
-		var zone: PackedVector2Array = zones[key]
+
+## Keeps the fronts and clips each one's ground to the land, only when they changed.
+func _set_zones(zones: Dictionary) -> void:
+	if zones.hash() == _zones.hash():
+		return
+	_zones = zones.duplicate(true)
+	_consumed_pieces.clear()
+	_prepare_geometry()
+	for key in _zones:
+		var zone: PackedVector2Array = _zones[key]
 		for ring in _rings:
 			# https://docs.godotengine.org/en/stable/classes/class_geometry2d.html#class-geometry2d-method-intersect-polygons
 			for piece in Geometry2D.intersect_polygons(zone, ring):
@@ -426,15 +441,12 @@ func _draw() -> void:
 		var polygon := _to_screen_polygon(piece)
 		draw_colored_polygon(polygon, Color(COLOR_CONSUMED_FILL, 0.6))
 		_hatch(polygon)
-	var zones := WorldMap.zone_polygons()
-	for key in zones:
-		var outline := _to_screen_polygon(zones[key])
+	for key in _zones:
+		var outline := _to_screen_polygon(_zones[key])
 		outline.append(outline[0])
 		draw_polyline(outline, Color(COLOR_FRONT, 0.06), 28.0, true)
 		draw_polyline(outline, Color(COLOR_FRONT, 0.12), 10.0, true)
 		draw_polyline(outline, COLOR_FRONT, 1.6, true)
-	for arrow in WorldMap.arrows():
-		_draw_arrow(_to_screen(arrow["point"]), deg_to_rad(float(arrow["degrees"])))
 	for entry in _entries:
 		if entry.has("origin"):
 			var center := _to_screen(entry["point"])
@@ -460,19 +472,20 @@ func _hatch(polygon: PackedVector2Array) -> void:
 				draw_line(piece[0], piece[piece.size() - 1], COLOR_HATCH, 1.2)
 		offset += spacing
 
-func _draw_arrow(center: Vector2, angle: float) -> void:
-	var points := PackedVector2Array([Vector2(0, -7), Vector2(5, 3), Vector2(0, 0.5), Vector2(-5, 3)])
-	var rotated := PackedVector2Array()
-	for point in points:
-		rotated.append(center + point.rotated(angle))
-	draw_colored_polygon(rotated, Color("ff7fd0"))
-
 func _draw_city(entry: Dictionary) -> void:
 	var state := String(entry.get("state", WorldMap.STATE_SAFE))
 	var center := _to_screen(entry.get("point", Vector2.ZERO))
 	var color: Color = STATE_COLORS.get(state, COLOR_TEXT)
 	var alpha := 1.0 if _matches(entry) else 0.25
 	var city_id := String(entry.get("id", ""))
+	if entry.get("liberated", false):
+		# Fought and won: a cyan ring around a quiet marker, whatever the front near it does.
+		var cyan: Color = STATE_COLORS[WorldMap.STATE_THREATENED]
+		draw_circle(center, 3.5, Color(cyan, 0.9 * alpha))
+		draw_arc(center, 7.5, 0.0, TAU, 32, Color(cyan, 0.9 * alpha), 1.6, true)
+		if city_id == _selected_id and _interactive:
+			draw_arc(center, 11.0, 0.0, TAU, 32, COLOR_SELECT, 1.6, true)
+		return
 	match state:
 		WorldMap.STATE_SAFE:
 			draw_circle(center, 3.0, Color(color, alpha))

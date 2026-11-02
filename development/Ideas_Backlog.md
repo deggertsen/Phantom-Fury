@@ -36,6 +36,7 @@ Ideas worth keeping that are not on the roadmap yet. Nothing here is scheduled. 
 - **Earth mission replays and off-planet DLC.** From the original progression notes: replaying cleared breaches with modifiers; a later expansion through a rift to the phantom dimension.
 - **Multiplayer.** Co-op holds where two Strikers share a breach, and the original "life force sharing" idea where one Striker can lend the other recovery.
 - **Daily and weekly breach.** Scheduled in Phase 7; the seeded, shared version of it with modifiers is still an idea.
+- **Breach Night as an authored run.** Retired as the game's front door on 2026-11-01, when the world map became the boot screen. The six operations (First Light, Widen the Ring, Chen's Gambit, Double Breach, Open Arc, The Maw) still exist in `MissionCatalog` for debug deploys and as The Maw's template, with their Chen debriefs that each reveal one thing about the Overseer. Two ways back: Portland's first two operations could be these six, authored instead of generated, so the home city tells Breach Night's story; or the heartbeat could offer them as a narrated event. The earlier plan of reshaping them into the tutorial arc was dropped because Chen's training chamber already teaches the rules.
 
 ## Presentation and audio
 

@@ -58,12 +58,13 @@ func _update_thumbstick_scroll(delta: float) -> void:
 	_settings_scroll.scroll_vertical += int(-scroll_input * 620.0 * delta)
 
 ## After Chen signs off, in the chamber: deploy the next operation, go again, or leave.
+## deploy_detail names where the recruit is sent first: the home city and what it asks.
 func show_training_complete(deploy_detail: String) -> void:
 	_begin_view(&"TRAINING", "RSF // TRAINING CHAMBER 07", "TRAINING COMPLETE", "THE GAUNTLETS ARE YOURS", COLOR_GREEN)
-	_add_copy("SIMULATION ENDED", "Every rule you just met works the same out there. The phantoms will not pause.", COLOR_MUTED)
-	_content.add_child(_make_action_button(&"training_deploy", "⚡  DEPLOY\n%s" % deploy_detail, COLOR_MAGENTA, Vector2(0, 104), true))
+	_add_copy("SIMULATION ENDED", "Every rule you just met works the same out there. The phantoms will not pause. Chen has a city for you.", COLOR_MUTED)
+	_content.add_child(_make_action_button(&"training_deploy", "⚡  TO THE FRONT\n%s" % deploy_detail, COLOR_MAGENTA, Vector2(0, 104), true))
 	_content.add_child(_make_action_button(&"training_replay", "REPLAY TRAINING", COLOR_VIOLET, Vector2(0, 82)))
-	_content.add_child(_make_action_button(&"training_menu", "CITY MAP", COLOR_BLUE, Vector2(0, 82)))
+	_content.add_child(_make_action_button(&"training_menu", "WORLD MAP", COLOR_BLUE, Vector2(0, 82)))
 	_set_footer("POINT + TRIGGER TO SELECT  •  HOLD META BUTTON TO RECENTER")
 
 func _tier_color(tier_id: String) -> Color:

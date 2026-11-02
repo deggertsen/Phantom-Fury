@@ -66,19 +66,7 @@ func _process(delta: float) -> void:
 		if material:
 			material.emission_energy_multiplier = 1.1 + sin(_holo_time * 1.8 + index) * 0.35
 
-## The main menu: the breach city. entries are MissionCatalog.operation_entries; selected_id is
-## the site the right panel shows and Deploy starts.
-func show_city_map(entries: Array[Dictionary], selected_id: String, tier_id: String = DifficultyTier.STANDARD, training_first: bool = false) -> void:
-	_show(true)
-	_left_panel.show_city_status(entries, training_first)
-	_map_panel.show_city_map(entries, selected_id)
-	var selected: Dictionary = {}
-	for entry in entries:
-		if entry.get("id", "") == selected_id:
-			selected = entry
-	_right_panel.show_site_detail(selected, tier_id, training_first)
-
-## The world front. world: see VRWrapPanel.show_world_status; entries are WorldMap.city_entries.
+## The world front, the main menu. world: see VRWrapPanel.show_world_status; entries are WorldMap.city_entries.
 func show_world_map(world: Dictionary, entries: Array[Dictionary], selected_id: String) -> void:
 	_show(true)
 	_left_panel.show_world_status(world)

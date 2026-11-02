@@ -25,13 +25,17 @@ The difficulty buttons leave the Operations screen. The city's state is the tier
 
 ## Fronts
 
-Two polygons in longitude and latitude (`WorldMap.ZONES`), one around the Jakarta tear covering South and Southeast Asia and Australia, one around the Chicago tear covering the Midwest to the East Coast and the Gulf. Arrows along the edge show where each is pushing. Until there is a server, the fronts are fixed authored shapes; liberation moves per city, not the polygon. When the server exists, the polygon follows aggregate liberation.
+Two polygons in longitude and latitude (`WorldMap.ZONES`), one around the Jakarta tear covering South and Southeast Asia and Australia, one around the Chicago tear covering the Midwest to the East Coast and the Gulf. They are the war as a fresh profile finds it: the seeded operations are already in these shapes.
+
+**The fronts never advance until the war has a heartbeat.** The long-term plan is a server, with an AI or an admin moving the phantoms over time and narrating it; until then nothing pushes outward, and alpha testers can fight the phantoms all the way back (David, 2026-11-01). What does move is the player's own push: each completed operation in a front's cities shrinks that front toward its tear by its share (`WorldMap.recession`: the player's completed operations over the operations those cities still took when the profile began, with the tear's own city left out). At full recession the authored shape has shrunk by `RECESSION_MAX` (88 percent) about the tear. A city's front is the nearest authored polygon (`zone_of`). As a front recedes, consumed cities behind it come out as overrun and open up, so the war is fought inward: the coast first, the tear last. When every other city of a front is liberated, the tear's city itself turns overrun, the last fight of that front, and liberating it removes the front entirely (`zone_polygons(settings)`). The drawn map shows these receded fronts; the footer says why they move.
 
 ## Liberation
 
 Each city has a resistance: the number of operations it takes to liberate it (`ops`). Liberation is operations completed over operations needed. The bar moves only when an operation completes, so a single mission cannot be farmed for war progress; the operation in progress shows as a dashed segment. Rift counts are never shown: a mission opens and closes many rifts, so a count would lie.
 
 World liberation on the header is the mean of city liberation, with safe cities at 100 and consumed at 0.
+
+A city with every operation done is **liberated**: it shows LIBERATED with a cyan ring on the map, has no missions, and counts 100 whatever the front near it is doing (`city_entries`). It will get missions again only when the war can push a front back over it.
 
 ## City view: one section at a time
 
@@ -71,7 +75,9 @@ Reset Progress clears world progress and keeps audio and training.
 
 ## What happens to the six operations
 
-They stay as they are on `main` for now. The game still boots to the Breach Night city map; its left panel has a World Map button, and the home city's card on the world map has a Breach Night button back. The plan on the roadmap is for the six to become the tutorial arc; that restructure, and making the world map the boot screen, are separate pieces of work.
+Retired as a front door on 2026-11-01 (David: "we're moving beyond the original six operations in favor of the world map with difficulty levels. Players simply jump right into the world's war"). The game boots to the world map, which is the main menu. A fresh profile is pointed at Training first (the left panel's leading button); Training Complete offers TO THE FRONT, which opens the home city's section with its region remembered, and WORLD MAP. Chen's priority card on the world map is the suggestion of where help is needed; it points at the home city while that has missions and will get smarter when the war has a heartbeat.
+
+The six operations stay in `MissionCatalog` as data: The Maw district copies the Maw operation's rift, the debug `--mission=<id>` and B deploys still play them, and their results panels still exist for that. Their story arc (Chen's debriefs revealing the Overseer) is in `Ideas_Backlog.md` under Modes and structure, for when Portland or the heartbeat wants an authored run.
 
 ## Build order
 
@@ -85,8 +91,7 @@ Built 2026-10-26 on `claude/world-map`, all validated headless (`Tests/validatio
 
 ## Open
 
-- Whether the world map should be the boot screen once the six operations are the tutorial.
-
+- The heartbeat: a server with an AI or an admin moving the fronts over time and narrating it. Until then the fronts only recede.
 - Whether to reveal only the next column's district kinds (Path of Exile's trial does this) once there are more than four kinds to choose between.
 - Whether the home city should get Chen's priority pull as well as the world.
 - Offline tide: no until there is a server, by decision.

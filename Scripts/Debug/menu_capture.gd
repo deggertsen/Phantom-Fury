@@ -11,7 +11,6 @@ var _right: VRWrapPanel
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://reports/menu-states"))
 	_build_wrap_stage()
-	await _capture_city_map()
 	await _capture_results()
 	await _capture_world()
 	_stage.queue_free()
@@ -50,29 +49,7 @@ func _add_wrap_panel(at: Vector2, panel_size: Vector2) -> VRWrapPanel:
 	holder.add_child(panel)
 	return panel
 
-func _show_city(profile: Node, selected_id: String, training_first: bool = false) -> void:
-	var entries := MissionCatalog.operation_entries(profile)
-	_left.show_city_status(entries, training_first)
-	_center.show_city_map(entries, selected_id)
-	for entry in entries:
-		if entry.get("id", "") == selected_id:
-			_right.show_site_detail(entry, MissionCatalog.tier_from(profile), training_first)
-
-func _capture_city_map() -> void:
-	var profile := _profile(["first_light", "widen_the_ring"])
-	_show_city(profile, "chens_gambit")
-	await _capture("city-map.png")
-	_show_city(profile, "first_light")
-	await _capture("city-map-replay.png")
-	profile.difficulty_tier = DifficultyTier.FULL_RESONANCE
-	_show_city(profile, "chens_gambit")
-	await _capture("city-map-full-resonance.png")
-	profile.free()
-	var recruit := _profile([])
-	_show_city(recruit, "first_light", true)
-	await _capture("city-map-new-recruit.png")
-	recruit.free()
-
+## Results for a catalog operation, which only debug deploys reach now.
 func _capture_results() -> void:
 	var cleared := _profile(["first_light", "widen_the_ring", "chens_gambit"])
 	cleared.best_times["chens_gambit"] = 252.0
@@ -173,6 +150,7 @@ func _capture_world() -> void:
 		"priority": {"city_id": home_id, "body": "%s. The front is about %d km out and it does not stop. Hold home ground." % [home["name"], WorldMap.kilometers(float(home["distance"]))], "bonus": "%s  •  %s" % [home["difficulty_label"], home["resistance"]]},
 		"training_first": true,
 		"assist": false,
+		"zones": WorldMap.zone_polygons(profile),
 	}
 	_left.show_world_status(world)
 	_center.show_world_map(entries, home_id, world)
@@ -204,6 +182,23 @@ func _capture_world() -> void:
 	_center.world_map_view().finish_zoom()
 	_right.show_world_city(_entry(entries, "sao_paulo"), world)
 	await _capture("world-map-safe-card.png")
+	# The war fought back: Tokyo, Seoul, Beijing and Delhi liberated pull the Jakarta front in.
+	var veteran := _profile([])
+	for city_id in ["tokyo", "seoul", "beijing", "delhi"]:
+		var raw := WorldMap._raw_city(city_id)
+		veteran.world_progress[city_id] = {"ops_done": int(raw["ops"]) - int(raw.get("seed_ops", 0)), "section": 2, "sealed": []}
+	var fought := WorldMap.city_entries(veteran)
+	var pushed := world.duplicate()
+	pushed["region"] = ""
+	pushed["liberation"] = WorldMap.world_liberation(veteran)
+	pushed["zones"] = WorldMap.zone_polygons(veteran)
+	pushed["priority"] = {"city_id": "mumbai", "body": "The Jakarta front is falling back. Mumbai is in reach again.", "bonus": "HARD  •  HEAVY"}
+	_left.show_world_status(pushed)
+	_center.show_world_map(fought, "tokyo", pushed)
+	_center.world_map_view().finish_zoom()
+	_right.show_world_city(_entry(fought, "tokyo"), pushed)
+	await _capture("world-map-pushed-back.png")
+	veteran.free()
 	# Tokyo's section, fresh and then with one seal.
 	var city := _city(tokyo, [])
 	_left.show_operations_status(city)
@@ -346,7 +341,7 @@ func _city(entry: Dictionary, sealed: Array, assist: bool = false, selected: Str
 	}
 
 func _capture_tutorial() -> void:
-	_menu.show_training_complete(MissionCatalog.deploy_detail(null))
+	_menu.show_training_complete("PORTLAND  •  THREATENED  •  STANDARD")
 	await _capture("training-complete.png")
 	_menu.show_pause(true)
 	await _capture("training-pause.png")

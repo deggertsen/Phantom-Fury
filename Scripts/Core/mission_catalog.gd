@@ -85,18 +85,6 @@ static func unlocked_followup(mission_id: String, settings: Object) -> String:
 		return ""
 	return ""
 
-## The Deploy button's line: the next operation, its expected time at the chosen tier, and the tier.
-static func deploy_detail(settings: Object) -> String:
-	var tier := tier_from(settings)
-	var mission := get_mission(next_unlocked_id(settings))
-	if mission.is_empty():
-		return "Seal the next live rift • %s" % DifficultyTier.label(tier)
-	var cleared := _cleared_from(settings)
-	var replay := String(mission.get("id", "")) in cleared
-	var prefix := "REPLAY" if replay else "NEXT"
-	var tiered := DifficultyTier.apply_mission(mission, tier)
-	return "%s • %s %s • %s • %s" % [prefix, mission.get("codename", "OP"), mission.get("title", "MISSION"), expected_minutes_text(tiered), DifficultyTier.label(tier)]
-
 ## The difficulty the settings hold, or Standard.
 static func tier_from(settings: Object) -> String:
 	if settings == null:

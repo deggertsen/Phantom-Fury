@@ -1,13 +1,13 @@
 # Quest Menu UX Test Plan
 
-Updated 2026-10-24 for the wraparound city map (`Scripts/UI/vr_wrap_panel.gd`, `Scripts/UI/city_map.gd`) and the single panel that still carries Training Complete, settings, pause, and the confirmations (`Scripts/UI/vr_menu_panel.gd`). Use a debug build from current `main`.
+Updated 2026-11-01: the game boots to the world map, which is the main menu (`Scripts/UI/vr_wrap_panel.gd`, `Scripts/UI/world_map_view.gd`, `Scripts/UI/city_operations_map.gd`); the single panel still carries Training Complete, settings, pause, and the confirmations (`Scripts/UI/vr_menu_panel.gd`). Breach Night's six-site city map is gone from the menus. Use a debug build from current `main`.
 
 ## Entry and recentering
 
 - Launch while facing away from the intended play direction; hold the Meta button and confirm the menu is centered after Horizon OS recentering.
 - The panels remain stationary in world space while the player turns their head.
 - Only holding the Meta button moves the panels. Selecting a site or a difficulty, opening settings, pausing, results, opening and closing the universal menu, and taking the headset off and putting it back on all leave them where they are.
-- The city map and results are three panels: the city on the left, the map in the middle about 2.45 m away, the site and Deploy on the right. The side panels stand off the middle one's edges, turned 30° in toward the player. Everything sits at eye height inside the comfortable field of view; Deploy needs at most a small head turn to the right, never a turn of the shoulders.
+- The world map, a city's section, and results are three panels: the war or the city on the left, the map in the middle about 2.45 m away, the city card or the district and Deploy on the right. The side panels stand off the middle one's edges, turned 30° in toward the player. Everything sits at eye height inside the comfortable field of view; Deploy needs at most a small head turn to the right, never a turn of the shoulders.
 - Settings, pause, the confirmations, Training Complete, and the XR suspended page are one panel straight ahead, as before.
 
 ## Pointer interaction
@@ -20,39 +20,11 @@ Updated 2026-10-24 for the wraparound city map (`Scripts/UI/vr_wrap_panel.gd`, `
 - Results respond to both lasers after victory and after defeat (regression check for the earlier Quest 3 issue).
 - Map sites are big enough to hit with the laser on the first try. Locked sites do not highlight or respond.
 
-## City map comprehension
-
-Ask a player who has not seen the project to identify, without coaching:
-
-1. Which option starts real combat? Expected: **Deploy** on the right panel. It names the difficulty it will play at; the line above it gives the site's expected time.
-2. How do you pick a different mission? Expected: point at another lit site on the map.
-3. Which option changes the difficulty? Expected: the four buttons above Deploy.
-4. Which option teaches the game? Expected: **Training Chamber** on the left panel.
-5. Which option changes audio, haptics, or comfort? Expected: **Settings** on the left panel.
-6. What do the red line and the hatched ground mean? Expected: the front, and the ground the breach still holds.
-
-Pass condition: 1 to 5 identified within 10 seconds; 6 explained without help.
-
-## City map
-
-- The left panel shows the city, how much is reclaimed (one sixth per sealed site), a segment per site, and which site to seal next.
-- The map shows six sites. Sealed ones carry a check, their best time and best score at the chosen difficulty (BEST 1:34 • 5,618), and the medal that score earned pinned to the marker; the live one is magenta with a cyan ring; the rest sit behind the front line, dashed and locked. Selecting an open or sealed site moves the selection ring to it and fills the right panel with it. Nothing starts until Deploy.
-- On opening, and on coming back from results, the next live site is selected; a clear that unlocked a new one selects that.
-- The front line sits right of every sealed site and left of every other one, at every sealed count. With all six sealed there is no line.
-- The right panel shows the site's codename, state, title, summary, expected time, and the best time at the chosen difficulty when there is one, with the best score and its medal (GOLD  BEST SCORE 5,618) under it.
-- Four difficulties sit above Deploy: ASSIST, STANDARD, OPERATOR, FULL RES. A fresh profile has STANDARD marked (●). Full Resonance can be picked on a fresh profile. Picking one marks it at once, recolors the panel and Deploy, and changes the line under the buttons to what it asks for. At Full Resonance that line names squats, jumps, and push-ups and says to clear room to jump; ask the tester whether they noticed it before deploying.
-- The choice survives Deploy and an app restart. Reset Progress keeps it.
-- Each site's best time, best score, and medal are the ones set at the chosen difficulty; switching difficulty swaps them (or hides them where that difficulty has no clear). OP-06 reads 4 TO 7 MIN at Full Resonance and 3 TO 6 MIN elsewhere.
-- A clear at any difficulty unlocks the next site.
-- All three panels fit without scrolling or clipped text, in every state (new recruit, Full Resonance, all sealed).
-- Medals read at panel distance: ask the tester which sites are gold, silver, and bronze without pointing at them. Expected: all three named correctly from the marker colors on the map, and from the name on the card. See [Workout_Stats.md](Workout_Stats.md) for the medal rule.
-- The left panel's World Map button opens the world front; Escape on desktop goes back.
-
 ## World map
 
 Ask a player who has not seen the project, without coaching:
 
-1. Where is the war? Expected: the two hatched regions behind the magenta lines, with arrows showing where they push.
+1. Where is the war? Expected: the two hatched regions behind the magenta lines. The fronts do not advance; they fall back toward their tear as cities inside them are liberated, and a liberated city wears a cyan ring.
 2. Which cities can you fight in? Expected: the lit markers (cyan, amber, magenta); grey dots are safe and have no missions; dark dots are consumed.
 3. How do you play on easy? Expected: the EASY filter on the left, or a cyan (threatened) city.
 4. How do you start? Expected: point at a region, then a city, then **Open** on the right panel, then a district, then **Deploy**.
@@ -91,11 +63,11 @@ Pass condition: all four within 15 seconds.
 
 Training is no longer a menu: it is Dr. Chen's training chamber ([Tutorial_Plan.md](Tutorial_Plan.md)). What the menu has to get right around it:
 
-- On a fresh profile, Training Chamber is the highlighted button with a NEW RECRUIT note above it, and Deploy reads TRAINING RECOMMENDED FIRST in outline instead of filled. Deploy still starts the selected site. Once training is done (finished or ended from pause), the city map returns to its usual layout.
+- On a fresh profile, the world map's Training button leads (Start here); after training it reads Replay. Open and Deploy work regardless. Once training is done (finished or ended from pause), the city map returns to its usual layout.
 - Selecting Training Chamber hides the menu and lasers and starts the chamber. No other trigger press starts it.
 - The menu button pauses training at any point, including Chen's introduction before the rift appears. The pause panel reads Resume Training, Settings, End Training, and Chen stops mid-line until Resume.
-- End Training needs no confirmation, returns to the city map, and counts training as done.
-- After Chen signs off, Training Complete offers Deploy (primary, naming the next contract), Replay Training, and City Map. Replay plays the whole tutorial again, identical to a first run.
+- End Training needs no confirmation, returns to the world map, and counts training as done.
+- After Chen signs off, Training Complete offers To the Front (primary, naming the home city, its state and its tier; it opens the home city's section, and the way back to the world lands on its region), Replay Training, and World Map. Replay plays the whole tutorial again, identical to a first run.
 - Headset removal during training shows the XR suspended page and holds the chamber where it is.
 
 ## Settings
@@ -105,7 +77,7 @@ Training is no longer a menu: it is Dr. Chen's training chamber ([Tutorial_Plan.
 - Reduced Flashes shows its state.
 - Changing any setting leaves the list scrolled where it was, with no jump to the top. Opening settings again starts at the top.
 - Reset Progress asks for confirmation and explains that audio and training are kept.
-- Back returns to the correct origin: the city map or pause.
+- Back returns to the correct origin: the world map, a city's section, results, or pause.
 - Settings and progress persist after an app restart.
 
 ## Pause, suspend, and results
