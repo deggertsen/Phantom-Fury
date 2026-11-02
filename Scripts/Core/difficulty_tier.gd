@@ -10,6 +10,14 @@ class_name DifficultyTier
 ## say what the tier asks of the body: sweeps at duck depth only, or squats, jumps, and push-ups,
 ## and whether a boss can come through. Only Full Resonance has bosses (decision 17), and at
 ## Full Resonance the boss carries the movements.
+##
+## A tier changes how hard a mission is, not how long: Assist and Operator run within a few
+## percent of Standard's time and Full Resonance about a tenth longer. Where the player's own
+## kill cadence sets the pace (pairs, The Maw) only health changes the length; where the feed
+## does (one rift at a time) health times interval does. Both stay near 1 for Assist and
+## Operator, so both kinds of mission hold their length. The 2026-11-01 audit found the first
+## guesses (Assist 0.8 health and 1.15 interval, Operator 1.15 and 0.9) moved paired missions and
+## The Maw by 12 to 20 percent. Tests/difficulty_audit.gd checks it on every validation run.
 ## The war map will take the choice over from the Operations screen; nothing here assumes a menu.
 ## See development/Exercise_Mechanics_Exploration.md, section 4.
 
@@ -29,8 +37,8 @@ const TIERS := {
 		"blurb": "Slower phantoms, longer tells, softer hits.",
 		"speed": 0.85,
 		"telegraph": 1.25,
-		"health": 0.8,
-		"interval": 1.15,
+		"health": 0.96,
+		"interval": 1.04,
 		"contact": 0.6,
 		"duck_only": true,
 		"squats": false,
@@ -57,8 +65,8 @@ const TIERS := {
 		"blurb": "Faster lunges, shorter tells, harder hits.",
 		"speed": 1.12,
 		"telegraph": 0.85,
-		"health": 1.15,
-		"interval": 0.9,
+		"health": 1.04,
+		"interval": 0.96,
 		"contact": 1.25,
 		"duck_only": true,
 		"squats": false,
@@ -156,6 +164,10 @@ static func apply_wave(wave: Dictionary, tier_id: String) -> Dictionary:
 		out["health"] = maxi(int(round(float(wave["health"]) * float(tier["health"]))), 1)
 	if wave.has("interval"):
 		out["interval"] = float(wave["interval"]) * float(tier["interval"])
+	# Cover the Team: the team's seal takes as much longer as the rift has more health, so the
+	# hold drains at Standard's pace and the tier's length holds there too.
+	if float(wave.get("hold_seconds", 0.0)) > 0.0:
+		out["hold_seconds"] = float(wave["hold_seconds"]) * float(tier["health"])
 	if not is_equal_approx(float(tier["contact"]), 1.0):
 		out["contact_scale"] = float(wave.get("contact_scale", 1.0)) * float(tier["contact"])
 	if bool(tier["duck_only"]):

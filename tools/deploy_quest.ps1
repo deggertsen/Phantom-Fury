@@ -33,8 +33,8 @@ $secret = $credentials | Where-Object { $_ -like 'meta/app_secret=*' -or $_ -lik
 if (-not $secret -or -not ($secret.Split('=', 2)[1]).Trim('"')) { throw 'export_credentials.cfg has neither meta/app_secret nor meta/token.' }
 Push-Location $projectRoot
 try {
-    $dirty = git status --porcelain | Where-Object { $_ -notmatch 'export_presets\.cfg$' }
-    if ($dirty) { throw "Working tree has uncommitted changes besides export_presets.cfg:`n$($dirty -join "`n")`nCommit or revert them first, so the tag matches what ships." }
+    $dirty = git status --porcelain | Where-Object { $_ -notmatch '(export_presets\.cfg|project\.godot)$' }
+    if ($dirty) { throw "Working tree has uncommitted changes besides export_presets.cfg and project.godot:`n$($dirty -join "`n")`nCommit or revert them first, so the tag matches what ships." }
     $branch = git rev-parse --abbrev-ref HEAD
     if ($branch -ne 'main') { Write-Warning "Deploying from branch '$branch', not main." }
 
@@ -46,6 +46,13 @@ try {
     $text = [regex]::Replace($text, '(?m)^version/code=\d+$', "version/code=$newCode")
     if ($VersionName) { $text = [regex]::Replace($text, '(?m)^version/name="[^"]*"$', "version/name=`"$VersionName`"") }
     [System.IO.File]::WriteAllText($presets, $text.Replace("`r`n", "`n"))
+    # The game reads its own code from project.godot (RunLog writes it on every line of the run
+    # log); validation fails if it and the presets disagree.
+    $projectFile = Join-Path $projectRoot 'project.godot'
+    $project = Get-Content $projectFile -Raw
+    if ($project -notmatch '(?m)^config/version_code=\d+$') { throw 'No config/version_code line in project.godot' }
+    $project = [regex]::Replace($project, '(?m)^config/version_code=\d+$', "config/version_code=$newCode")
+    [System.IO.File]::WriteAllText($projectFile, $project.Replace("`r`n", "`n"))
     $versionName = ([regex]::Match($text, '(?m)^\[preset\.1\](?:.|\n)*?^version/name="([^"]*)"$')).Groups[1].Value
     Write-Host "Version code $newCode, version name $versionName"
 
@@ -78,7 +85,7 @@ try {
 
     # Commit the bump so the shipped build is a known commit.
     if (-not $NoCommit) {
-        git add export_presets.cfg
+        git add export_presets.cfg project.godot
         git commit -q -m "Bump version code to $newCode for the $Channel channel."
     }
     $commit = git rev-parse --short HEAD

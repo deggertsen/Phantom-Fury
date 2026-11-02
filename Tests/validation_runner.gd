@@ -1,6 +1,9 @@
 extends SceneTree
 
 const SfxVariations := preload("res://Scripts/Audio/sfx_variations.gd")
+const DifficultyAudit := preload("res://Tests/difficulty_audit.gd")
+## Validation's own rounds write here, never to the player's run log.
+const VALIDATION_RUN_LOG := "user://validation_run_log.csv"
 
 var failures: Array[String] = []
 
@@ -8,6 +11,10 @@ func _initialize() -> void:
 	call_deferred("_run_validation")
 
 func _run_validation() -> void:
+	RunLog.log_path = VALIDATION_RUN_LOG
+	RunLog.copy_path = ""
+	if FileAccess.file_exists(VALIDATION_RUN_LOG):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(VALIDATION_RUN_LOG))
 	_validate_resources()
 	_validate_sfx_variations()
 	await _validate_variant_rules()
@@ -15,6 +22,8 @@ func _run_validation() -> void:
 	await _validate_attack_window()
 	await _validate_mission_catalog()
 	await _validate_difficulty_tiers()
+	await _validate_difficulty_audit()
+	await _validate_run_log()
 	await _validate_rift_stragglers()
 	await _validate_elapsed_timer()
 	await _validate_menu_surface()
@@ -44,6 +53,7 @@ func _run_validation() -> void:
 	await _validate_resonance_sweep()
 	_validate_hand_tracking_probe()
 	_validate_tracked_hands()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(VALIDATION_RUN_LOG))
 	await process_frame
 	if failures.is_empty():
 		print("PHANTOM FURY VALIDATION PASSED")
@@ -567,12 +577,17 @@ func _validate_world_kinds() -> void:
 				var maw := MissionCatalog.get_mission("the_maw")
 				if rifts != maw.get("rifts", []) or minutes != maw.get("expected_minutes", []):
 					failures.append("Shut the Maw is not The Maw's rift")
-	# The estimate reads the catalog's own operations about as the catalog did.
+	# The catalog's cards are the estimate's (2026-11-01). A card set from timed runs may differ;
+	# the audit (_validate_difficulty_audit) still holds every card to containing the estimate.
 	for mission_id in ["first_light", "widen_the_ring"]:
 		var operation := MissionCatalog.get_mission(mission_id)
 		var estimate := WorldMap.expected_minutes(operation)
-		if int(estimate[0]) != int(operation["expected_minutes"][0]):
+		if estimate != operation["expected_minutes"]:
 			failures.append("The world estimate puts %s at %s, the catalog at %s" % [mission_id, estimate, operation["expected_minutes"]])
+	# A hard puncher's clean run is the card's low end, and a soft one with misses stays under the high.
+	var widen := MissionCatalog.get_mission("widen_the_ring")
+	if WorldMap.run_seconds(widen, WorldMap.KILL_DAMAGE * WorldMap.HARD_POWER) >= WorldMap.run_seconds(widen) or WorldMap.run_seconds(widen, WorldMap.KILL_DAMAGE, WorldMap.MISS_ALLOWANCE) <= WorldMap.run_seconds(widen):
+		failures.append("Punch power and misses do not move the estimate the right way")
 
 ## A player who steps out of the path is still the target. A phantom that flies past the head
 ## must come back for it at once, never float at the point where the head used to be.
@@ -729,13 +744,13 @@ func _validate_city_menu() -> void:
 		failures.append("Deploy does not lead the site panel or name the difficulty")
 	elif not right.activate_at_viewport_point(deploy.get_global_rect().get_center()) or not deployed[0]:
 		failures.append("Pointing at Deploy did not activate it")
-	if not _has_label(right, "6 TO 8 MIN"):
+	if not _has_label(right, MissionCatalog.expected_minutes_text(entries[2])):
 		failures.append("The site panel does not show the expected time")
 	_check_fits(left, "city panel")
 	_check_fits(right, "site panel")
 	right.show_site_detail(entries[1], DifficultyTier.STANDARD, false)
 	await process_frame
-	if not _has_label(right, "6 TO 8 MIN  •  YOUR BEST 5:42"):
+	if not _has_label(right, "%s  •  YOUR BEST 5:42" % MissionCatalog.expected_minutes_text(entries[1])):
 		failures.append("The site panel does not show the best time beside the range")
 	# Every difficulty, the chosen one marked, and Full Resonance says what it asks before Deploy.
 	right.show_site_detail(entries[2], DifficultyTier.FULL_RESONANCE, false)
@@ -1556,6 +1571,118 @@ func _validate_arc_rift_placement() -> void:
 	director.queue_free()
 	player.queue_free()
 	await process_frame
+
+## The difficulty audit (Tests/difficulty_audit.gd): writes reports/difficulty_audit.md, and fails
+## when a tier's estimate leaves its card, a tier runs longer or shorter than the design says, or
+## a district kind leaves its band around its sibling operation. Its species tells must be the
+## phantoms' own, or every pressure figure is off.
+func _validate_difficulty_audit() -> void:
+	for line in DifficultyAudit.write_report():
+		failures.append("Difficulty audit: %s" % line)
+	var keys := {}
+	for entry in DifficultyAudit.entries():
+		keys[entry["key"]] = true
+	if keys.size() != MissionCatalog.all_missions().size() + WorldMap.KINDS.size():
+		failures.append("The difficulty audit does not read every operation and district kind: %s" % [keys.keys()])
+	for kind in WorldMap.KINDS:
+		if not DifficultyAudit.SIBLINGS.has(kind) or MissionCatalog.get_mission(String(DifficultyAudit.SIBLINGS[kind][0])).is_empty():
+			failures.append("District kind %s has no sibling operation in the audit" % kind)
+	for variant in DifficultyAudit.BASE_TELL:
+		var phantom := (load(MissionCatalog.scene_path(String(variant))) as PackedScene).instantiate()
+		root.add_child(phantom)
+		await process_frame
+		var tell := float(phantom.get("telegraph_seconds")) if variant == "pink" else float(phantom.get("pattern_telegraph_seconds"))
+		if not is_equal_approx(tell, float(DifficultyAudit.BASE_TELL[variant])):
+			failures.append("The audit puts %s's tell at %.2f s; the phantom's is %.2f s" % [variant, DifficultyAudit.BASE_TELL[variant], tell])
+		phantom.queue_free()
+	await process_frame
+	# The design's tier lengths, read off a paired mission (kill cadence sets the pace) and a
+	# single-rift one (the feed does).
+	for mission_id in ["double_breach", "widen_the_ring"]:
+		var standard := WorldMap.run_seconds(MissionCatalog.get_mission(mission_id))
+		for tier in [DifficultyTier.ASSIST, DifficultyTier.OPERATOR]:
+			var tiered := WorldMap.run_seconds(DifficultyTier.apply_mission(MissionCatalog.get_mission(mission_id), tier))
+			if absf(tiered / standard - 1.0) > DifficultyAudit.TIER_BAND:
+				failures.append("%s at %s runs %.0f s against Standard's %.0f s" % [mission_id, tier, tiered, standard])
+	# The run log's version code is the one the build ships with.
+	var presets := ConfigFile.new()
+	if presets.load("res://export_presets.cfg") == OK:
+		for section in presets.get_sections():
+			if section.ends_with(".options") and presets.has_section_key(section, "version/code") and int(presets.get_value(section, "version/code")) != RunLog.version_code():
+				failures.append("project.godot's version code %d is not %s's %d" % [RunLog.version_code(), section, int(presets.get_value(section, "version/code"))])
+	if RunLog.version_code() <= 0:
+		failures.append("project.godot has no application/config/version_code for the run log")
+
+## RunLog: a finished round writes one line with what the round knew, an abandoned round and
+## training write nothing, and a world district carries its kind.
+func _validate_run_log() -> void:
+	# Earlier checks may have finished rounds of their own.
+	if FileAccess.file_exists(VALIDATION_RUN_LOG):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(VALIDATION_RUN_LOG))
+	var container := Node3D.new()
+	container.add_to_group("PhantomContainer")
+	root.add_child(container)
+	var director := RiftDirector.new()
+	director.rift_manager_scene = load("res://Scenes/Rifts/rift_manager.tscn")
+	root.add_child(director)
+	var life := LifeForceManager.new()
+	root.add_child(life)
+	var round_controller := RoundController.new()
+	round_controller.countdown_seconds = 0
+	root.add_child(round_controller)
+	await process_frame
+	await process_frame
+	round_controller.set_process(false)
+	if round_controller.get_node_or_null("RunLog") == null:
+		failures.append("RoundController does not own a RunLog")
+	# An abandoned round writes nothing.
+	round_controller.begin_round(MissionCatalog.get_mission("first_light"), DifficultyTier.OPERATOR)
+	round_controller._process(0.0)
+	round_controller.abandon_round()
+	if FileAccess.file_exists(VALIDATION_RUN_LOG):
+		failures.append("An abandoned round wrote to the run log")
+	round_controller._finished = false
+	round_controller.begin_round(MissionCatalog.get_mission("first_light"), DifficultyTier.OPERATOR)
+	round_controller._process(0.0)
+	round_controller._process(95.5)
+	director.phantom_resolved.emit({"base_score": 100, "rift_damage": 12, "resolution_kind": &"strike"})
+	director.phantom_resolved.emit({"base_score": 100, "rift_damage": 12, "resolution_kind": &"strike"})
+	director.player_damaged.emit(5.0)
+	director.strike_rejected.emit(&"wrong_hand")
+	director.rift_closed.emit(1, 1, 4)
+	round_controller._on_all_clear()
+	var lines := FileAccess.get_file_as_string(VALIDATION_RUN_LOG).strip_edges().split("\n")
+	if lines.size() != 2 or lines[0] != RunLog.HEADER:
+		failures.append("The run log is not a header and one line: %s" % [lines])
+	else:
+		var cells := lines[1].split(",")
+		var header := RunLog.HEADER.split(",")
+		var row := {}
+		for i in mini(cells.size(), header.size()):
+			row[header[i]] = cells[i]
+		var expected: Array = DifficultyTier.apply_mission(MissionCatalog.get_mission("first_light"), DifficultyTier.OPERATOR)["expected_minutes"]
+		if cells.size() != header.size() or row["mission_id"] != "first_light" or row["kind"] != "operation" or row["tier"] != DifficultyTier.OPERATOR or row["outcome"] != "victory" or row["elapsed_seconds"] != "95.5" or row["phantoms_resolved"] != "2" or row["misses"] != "1" or row["rejections"] != "1" or row["rifts_sealed"] != "1" or row["rifts_total"] != "4" or int(row["rift_health"]) != RunLog.rift_health(DifficultyTier.apply_mission(MissionCatalog.get_mission("first_light"), DifficultyTier.OPERATOR)) or int(row["rift_health"]) <= 320 or int(row["expected_min"]) != int(expected[0]) or int(row["expected_max"]) != int(expected[1]) or int(row["version_code"]) != RunLog.version_code() or int(row["score"]) != round_controller.score:
+			failures.append("The run log line does not carry the round: %s" % lines[1])
+	round_controller.abandon_round()
+	round_controller._finished = false
+	# Training writes nothing.
+	round_controller.begin_round(TutorialDirector.training_mission())
+	round_controller._process(0.0)
+	round_controller._on_all_clear()
+	if FileAccess.get_file_as_string(VALIDATION_RUN_LOG).strip_edges().split("\n").size() != 2:
+		failures.append("Training wrote to the run log")
+	round_controller.abandon_round()
+	# A district names its kind, and a cell with a comma stays one cell.
+	var district := WorldMap.build_mission({"id": "portland", "name": "Portland"}, 0, {"id": "s0n1", "name": "Harbor", "kind": WorldMap.KIND_HOLD, "site": "harbor"}, DifficultyTier.STANDARD)
+	var world_line := RunLog.line_for(DifficultyTier.apply_mission(district, DifficultyTier.ASSIST), &"defeat", 61.0, 10, {"boss": "a,b"})
+	if not world_line.contains(",world:portland:0:s0n1,hold,assist,defeat,61.0,10,0,0,0,0,0,2400,") or not world_line.contains(",\"a,b\","):
+		failures.append("A district's run log line is wrong: %s" % world_line)
+	if OS.get_name() != "Android" and RunLog.external_copy_path() != "":
+		failures.append("The run log copies outside Android")
+	for node in [round_controller, life, director, container]:
+		node.queue_free()
+	await process_frame
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(VALIDATION_RUN_LOG))
 
 func _validate_rift_stragglers() -> void:
 	var container := Node3D.new()
