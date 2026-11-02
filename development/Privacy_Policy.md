@@ -1,6 +1,6 @@
 # Phantom Fury Privacy Policy
 
-**Effective date:** 2026-10-24
+**Effective date:** 2026-11-01
 **Applies to:** Phantom Fury: Resonance Rising for Meta Quest (package `com.phantomfury.resonancerising`), including test builds distributed through Meta release channels.
 
 This policy describes what the game does with information on your headset. It is written to match the game as built; the "What would change this" section at the end lists the features that would require an update.
@@ -11,15 +11,16 @@ Phantom Fury does not collect, transmit, sell, or share any personal information
 
 ## Information the game stores on your headset
 
-The game keeps one small settings file in its private app storage on the device. It contains:
+The game keeps a small settings file and a run log on the device. Together they contain:
 
 - Audio preferences: music, effects, and haptic levels, and whether you chose to play your own music.
 - Comfort preferences: haptic strength and the Reduced Flashes setting.
 - Progress: whether training has been completed, which operations you have sealed, your best score and fastest time per operation and difficulty, your chosen difficulty, and a count of how many times you have reached The Maw with and without its boss appearing.
+- A run log: one line per finished mission with the date and time it ended, which mission and difficulty, whether you won, how long it took, your score, how many phantoms you answered, missed, or struck with the wrong hand, how many rifts you sealed, the time range the mission card showed, and the game's version number. It exists so that you, or a tester who chooses to share it, can check the time shown on each mission card against real play. The game also keeps a copy of the run log in its own folder under Android/data on the headset, so it can be copied to a computer over USB when the headset is in developer mode. The game never sends it anywhere; it leaves the headset only if you copy it off yourself.
 
 None of this identifies you. It is not tied to your Meta account, your name, your email address, or any device identifier, and the game never reads any of those.
 
-You can clear your progress at any time from Settings with Reset Progress, which keeps your audio and comfort preferences. Uninstalling the game deletes the file entirely.
+You can clear your progress at any time from Settings with Reset Progress, which keeps your audio and comfort preferences and the run log. Uninstalling the game deletes all of it, the run log and its copy included.
 
 ## Information the game uses but does not store
 
@@ -39,7 +40,7 @@ When you install or run the game through the Meta Horizon Store or a Meta releas
 
 ## Test builds
 
-Development and test builds distributed to testers write diagnostic lines to the device's system log (logcat), such as which voice line played or how deep a squat registered. These lines stay on the device, are not transmitted, and are overwritten by the system. If you choose to share a system log or a gameplay recording with the developer for testing, you do so voluntarily, and it is used only to investigate the issue you report.
+Development and test builds distributed to testers write diagnostic lines to the device's system log (logcat), such as which voice line played or how deep a squat registered. These lines stay on the device, are not transmitted, and are overwritten by the system. If you choose to share a system log, the run log, or a gameplay recording with the developer for testing, you do so voluntarily, and it is used only to investigate the issue you report.
 
 ## Children
 

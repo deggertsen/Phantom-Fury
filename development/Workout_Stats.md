@@ -89,8 +89,10 @@ First Light and Clean Seal at every tier (silver / gold):
 
 | | Assist | Standard | Operator | Full Resonance |
 |---|---|---|---|---|
-| First Light | 3,387 / 4,838 | 3,765 / 5,378 | 5,143 / 7,346 | 4,535 / 6,478 |
-| Clean Seal | 7,584 / 10,834 | 10,008 / 14,296 | 12,528 / 17,896 | 10,932 / 15,616 |
+| First Light | 3,387 / 4,838 | 3,765 / 5,378 | 4,535 / 6,478 | 4,535 / 6,478 |
+| Clean Seal | 9,168 / 13,096 | 10,008 / 14,296 | 10,932 / 15,616 | 10,932 / 15,616 |
+
+Assist and Operator change rift health by only 4% (`DifficultyTier`, retuned 2026-11-01), so a tier's par moves only where that adds a kill: Widen the Ring's par is the same at Standard and Operator.
 
 Tune `SILVER_SHARE`, `GOLD_SHARE`, and `REFERENCE_POWER` in `MissionMedals`. Its `VARIANTS` table copies each phantom's points and damage; validation fails if a phantom changes and the table does not.
 
@@ -101,6 +103,6 @@ Tune `SILVER_SHARE`, `GOLD_SHARE`, and `REFERENCE_POWER` in `MissionMedals`. Its
 ## Known limits, for tuning
 
 - **A harder punch scores less over a mission.** Each phantom scores the same however hard it is hit, but a harder punch (or a crit, which does double rift damage) closes the rift in fewer phantoms. A soft, crit-less player who keeps the chain can out-score a hard-hitting one, and medals inherit that: a clean no-crit run at a soft punch (0.9) reaches par or more on most missions. Not changed on this pass (no phantom or scoring changes); a fix would weight score by rift damage or give crits points without the extra rift damage.
-- **First Light's first rift feeds every 4.2 s, past the 4 s combo timeout**, so its chain only holds when kills bunch up. At Assist, where every interval is 15% longer, most waves feed slower than the timeout, chains matter less there, and a chain-breaking run can still reach silver on some missions.
+- **First Light's first rift feeds every 4.2 s, past the 4 s combo timeout**, so its chain only holds when kills bunch up. Every other wave at every tier feeds faster than the timeout.
 - **The Maw at Full Resonance** can break into the boss fight; par counts only phase one's waves, so the boss phase's points make gold easier there.
 - Par is a model, not a timed run. Replace the shares with numbers from headset runs once testers report scores.

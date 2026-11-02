@@ -152,17 +152,20 @@ static func _best_score_from(settings: Object, mission_id: String, tier: String)
 		return 0
 	return int(settings.call("best_score", mission_id, tier))
 
-# expected_minutes is [min, max] minutes of play, shown on the mission card. Every pair is an
-# estimate from the wave tables (rift health over roughly 13 rift damage per kill, times the
-# spawn interval, plus misses and rift openings), not a timed headset run. Replace them with
-# timed runs; see Known_Issues.md.
+# expected_minutes is [min, max] minutes of play, shown on the mission card at every tier (the
+# tiers keep a mission's length; Full Resonance's Maw has its own). Every pair is
+# WorldMap.expected_minutes of the Standard waves: a hard puncher's clean run to an average one
+# with half again for misses (2026-11-01; the old pairs started at the average clean run, and the
+# developer finished under them). Not a timed headset run: replace them from user://run_log.csv
+# as development/Difficulty_Tuning.md describes. Validation fails if a tier's estimate leaves
+# the card (Tests/difficulty_audit.gd).
 static func _first_light() -> Dictionary:
 	return {
 		"id": "first_light",
 		"codename": "OP-01",
 		"title": "FIRST LIGHT",
 		"summary": "Proving ground. Gold lunges left, blue lunges right. Read it, then answer.",
-		"expected_minutes": [2, 4],
+		"expected_minutes": [2, 3],
 		"objective": "SEAL FOUR RIFTS",
 		"start_line": "CHEN: READ THE LUNGE. THEN ANSWER.",
 		"pressure_labels": ["CONTACT", "ADAPTING", "SECOND PASS", "LAST DOOR"],
@@ -182,7 +185,7 @@ static func _widen_the_ring() -> Dictionary:
 		"codename": "OP-02",
 		"title": "WIDEN THE RING",
 		"summary": "Civic ring. Greens crash the chest. Pinks paint a line and own it.",
-		"expected_minutes": [6, 8],
+		"expected_minutes": [5, 9],
 		"objective": "SEAL TWELVE RIFTS",
 		"start_line": "CHEN: GREENS CRASH. PINKS OWN A LINE.",
 		"pressure_labels": ["CONTACT", "MIXED", "RING LOUD", "SECOND WAVE", "RING HOT", "HALF RING", "THIRD WAVE", "STILL MIXED", "RING LOUDER", "FOURTH WAVE", "RING HOT", "LAST DOOR"],
@@ -203,7 +206,7 @@ static func _chens_gambit() -> Dictionary:
 		"codename": "OP-03",
 		"title": "CHEN'S GAMBIT",
 		"summary": "Junction rift. The Overseer is aiming them. Shorter tells. No free swings.",
-		"expected_minutes": [6, 8],
+		"expected_minutes": [5, 8],
 		"objective": "SEAL THE JUNCTION",
 		"start_line": "CHEN: THE OVERSEER IS AIMING THEM.",
 		"pressure_labels": ["MARKED", "HUNTED", "JUNCTION", "IT ANSWERED", "NO MERCY", "HALFWAY", "STILL AIMING", "HUNTED AGAIN", "DEEP JUNCTION", "IT ANSWERED", "NO MERCY", "LAST SEAL"],
@@ -262,7 +265,7 @@ static func _the_maw() -> Dictionary:
 		"codename": "OP-06",
 		"title": "THE MAW",
 		"summary": "One vast rift. Phantoms pour out in a steady flood, and the mouth takes a long chew to shut.",
-		"expected_minutes": [4, 6],
+		"expected_minutes": [3, 6],
 		"objective": "SEAL THE MAW",
 		"arc_rifts": true,
 		"start_line": "CHEN: ONE MOUTH. IT DOES NOT STOP FEEDING.",

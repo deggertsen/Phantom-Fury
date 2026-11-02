@@ -42,7 +42,7 @@ Pass condition: 1 to 5 identified within 10 seconds; 6 explained without help.
 - The right panel shows the site's codename, state, title, summary, expected time, and the best time at the chosen difficulty when there is one, with the best score and its medal (GOLD  BEST SCORE 5,618) under it.
 - Four difficulties sit above Deploy: ASSIST, STANDARD, OPERATOR, FULL RES. A fresh profile has STANDARD marked (●). Full Resonance can be picked on a fresh profile. Picking one marks it at once, recolors the panel and Deploy, and changes the line under the buttons to what it asks for. At Full Resonance that line names squats, jumps, and push-ups and says to clear room to jump; ask the tester whether they noticed it before deploying.
 - The choice survives Deploy and an app restart. Reset Progress keeps it.
-- Each site's best time, best score, and medal are the ones set at the chosen difficulty; switching difficulty swaps them (or hides them where that difficulty has no clear). OP-06 reads 4 TO 7 MIN at Full Resonance and 4 TO 6 MIN elsewhere.
+- Each site's best time, best score, and medal are the ones set at the chosen difficulty; switching difficulty swaps them (or hides them where that difficulty has no clear). OP-06 reads 4 TO 7 MIN at Full Resonance and 3 TO 6 MIN elsewhere.
 - A clear at any difficulty unlocks the next site.
 - All three panels fit without scrolling or clipped text, in every state (new recruit, Full Resonance, all sealed).
 - Medals read at panel distance: ask the tester which sites are gold, silver, and bronze without pointing at them. Expected: all three named correctly from the marker colors on the map, and from the name on the card. See [Workout_Stats.md](Workout_Stats.md) for the medal rule.
