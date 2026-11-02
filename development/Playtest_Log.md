@@ -107,3 +107,9 @@ Training, a Standard operation for the fly-past fix, and the Full Resonance Maw,
 First build uploaded to Meta. Channel alpha, app 1380039785197018, build ID 1381106231757040, APK sha256 ebb6b42a198577c5243eb3b514aedafe1964c4223cbb334b2d22a8ad5ee6f83b (124.1 MB). Notes: first tester build with the Phantom Fury rename, wraparound city map, shuffled boss cycle, dodged phantoms turning back. Target SDK 34 (Meta rejected 36 on the first attempt); the export warned that no build tools match SDK 34 and used 35.0.0, which Meta accepted. Meta's own validation and compatibility tests were still running at upload time.
 
 Testers added to the channel see it under Library, My Preview Apps. Tester reports go in entries below, each naming this build.
+
+### 2026-11-01 — alpha channel build, v1.0.0 code 3, commit 49a49d7
+
+Second alpha build. Channel alpha, app 1380039785197018, build ID 1400759883125008, APK sha256 d31fb2cffa15a1862f32204fdff6892c3e7cfbc4aa48ac10ca7315dcc38b11ee (124.2 MB). Notes: the world map (pick a continent, then a city, then a district; two fronts; cities by state; one generated section per city; operations liberate), seven breach-site environments chosen by district, districts that run as long as operations, mission names with no boss called out, results that work as the city map, and the punch direction fix after a Meta recenter (PRs #12 through #16). Meta's validation and compatibility tests were still running at upload time. The upload utility reported that a newer version of itself (211.0.0) is available; not updated yet.
+
+Things to feel on this build, from the developer's 2026-10-26 debug-build playthrough: zoom pacing on Quest, whether city targets are big enough at region zoom, hold-the-line length at Standard, and the fling direction after a recenter.
