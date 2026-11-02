@@ -3678,10 +3678,10 @@ func _validate_medals() -> void:
 		failures.append("Clean Seal and First Light share a par; each mission needs its own")
 	var standard := int(MissionMedals.operation_thresholds("widen_the_ring", DifficultyTier.STANDARD)[MissionMedals.GOLD])
 	var operator := int(MissionMedals.operation_thresholds("widen_the_ring", DifficultyTier.OPERATOR)[MissionMedals.GOLD])
-	# Operator carries 4 percent more rift health since the 2026-11-01 retune, which does not always
-	# add a phantom to the reference round, so its par may equal Standard's; it must never be lower.
-	if operator < standard:
-		failures.append("Widen the Ring's gold at Operator (%d) is below Standard's (%d)" % [operator, standard])
+	var resonance := int(MissionMedals.operation_thresholds("widen_the_ring", DifficultyTier.FULL_RESONANCE)[MissionMedals.GOLD])
+	# Operator adds only 4% rift health, which may not add a kill; Full Resonance adds a tenth.
+	if operator < standard or resonance <= standard:
+		failures.append("Widen the Ring's gold does not rise with rift health: Standard %d, Operator %d, Full Resonance %d" % [standard, operator, resonance])
 	for kind in WorldMap.KINDS:
 		for tier in DifficultyTier.ORDER:
 			var world_thresholds := MissionMedals.world_thresholds(kind, tier)
