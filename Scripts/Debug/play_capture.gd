@@ -55,6 +55,7 @@ func _ready() -> void:
 	_press(KEY_ESCAPE)
 	await _wait(0.8)
 	await _capture("06-pause")
+	await _capture_live_defeat()
 	await _capture_results()
 	print("PLAY CAPTURE COMPLETE: %s" % _out_dir)
 	get_tree().quit()
@@ -273,6 +274,18 @@ func _capture_city_tiers() -> void:
 	await _wait(0.6)
 
 ## Results after sealing the junction, from a scratch profile so the real one records nothing.
+## The round just played, ended by the failsafe: GameFlowController builds the real report, with
+## the round's own session stats. A defeat records nothing, so the profile is untouched.
+func _capture_live_defeat() -> void:
+	var round := _main.get_node("RoundController") as RoundController
+	round.resume_round()
+	await _wait(2.0)
+	var life := get_tree().get_first_node_in_group("LifeForceManager") as LifeForceManager
+	life.life_force_depleted.emit()
+	await _wait(0.8)
+	print("PLAY CAPTURE live stats: %s" % round.stats.to_report())
+	await _capture("06b-results-live-defeat")
+
 func _capture_results() -> void:
 	var presenter := _main.get_node("VRMenuPresenter") as VRMenuPresenter
 	var profile: Node = load("res://Scripts/Core/game_settings.gd").new()

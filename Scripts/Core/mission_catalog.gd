@@ -103,7 +103,8 @@ static func tier_from(settings: Object) -> String:
 		return DifficultyTier.DEFAULT
 	return DifficultyTier.resolve(String(settings.get("difficulty_tier")))
 
-## Cards for the Operations screen at the chosen tier: the expected and best times are that tier's.
+## Cards for the Operations screen at the chosen tier: the expected and best times, the best
+## score, and the medal that score earned (MissionMedals) are that tier's.
 static func operation_entries(settings: Object) -> Array[Dictionary]:
 	var tier := tier_from(settings)
 	var cleared := _cleared_from(settings)
@@ -113,6 +114,7 @@ static func operation_entries(settings: Object) -> Array[Dictionary]:
 		var mission: Dictionary = missions[index]
 		var mission_id := String(mission.get("id", ""))
 		var unlocked := is_unlocked_with_clears(mission_id, cleared)
+		var best_score := _best_score_from(settings, mission_id, tier)
 		var lock_reason := "Clear the previous operation"
 		if index > 0:
 			lock_reason = "Seal %s first" % missions[index - 1].get("title", "the previous operation")
@@ -123,6 +125,8 @@ static func operation_entries(settings: Object) -> Array[Dictionary]:
 			"summary": mission.get("summary", ""),
 			"expected_minutes": DifficultyTier.apply_mission(mission, tier).get("expected_minutes", []),
 			"best_seconds": _best_time_from(settings, mission_id, tier),
+			"best_score": best_score,
+			"medal": MissionMedals.medal_for(best_score, MissionMedals.operation_thresholds(mission_id, tier)),
 			"tier": tier,
 			"unlocked": unlocked,
 			"cleared": mission_id in cleared,
@@ -142,6 +146,11 @@ static func _best_time_from(settings: Object, mission_id: String, tier: String) 
 	if settings == null or not settings.has_method("best_time"):
 		return 0.0
 	return float(settings.call("best_time", mission_id, tier))
+
+static func _best_score_from(settings: Object, mission_id: String, tier: String) -> int:
+	if settings == null or not settings.has_method("best_score"):
+		return 0
+	return int(settings.call("best_score", mission_id, tier))
 
 # expected_minutes is [min, max] minutes of play, shown on the mission card at every tier (the
 # tiers keep a mission's length; Full Resonance's Maw has its own). Every pair is

@@ -188,6 +188,8 @@ func _try_strike(body: Node3D) -> void:
 		"quality": clampf((speed - punch_strength_threshold) / maxf(max_punch_velocity - punch_strength_threshold, 0.1), 0.0, 1.0),
 	}
 	var result: Dictionary = body.receive_strike(strike)
+	if round:
+		round.record_strike(result)
 	var kind: StringName = result.get("resolution_kind", &"")
 	if kind == &"block_half":
 		_pulse_hand(0.7, 0.12)

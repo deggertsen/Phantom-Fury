@@ -32,6 +32,10 @@ var _last_score: int = 0
 var _last_seconds: float = 0.0
 ## The mission's fastest stored victory before the round that just finished, so results can call a new best.
 var _previous_best_time: float = 0.0
+## The same for the best score, so results can call a new best score.
+var _previous_best_score: int = 0
+## The round's SessionStats, as results show them.
+var _last_stats: Dictionary = {}
 var _active_mission_id: String = ""
 ## The difficulty the active mission plays at, and whether it is a debug shortcut that records nothing.
 var _active_tier: String = DifficultyTier.STANDARD
@@ -560,6 +564,7 @@ func _city_status(entry: Dictionary) -> Dictionary:
 	var tier := WorldMap.tier_for(String(entry.get("state", "")), assist)
 	var kind := String(node.get("kind", WorldMap.KIND_SINGLE))
 	var mission := WorldMap.build_mission(entry, int(entry.get("section", 0)), node, tier) if not node.is_empty() else {}
+	var best_score: int = _settings.best_score(_world_record_id(String(entry["id"]), kind), tier) if _settings else 0
 	return {
 		"entry": entry,
 		"section": section,
@@ -573,11 +578,13 @@ func _city_status(entry: Dictionary) -> Dictionary:
 		"kind_summary": WorldMap.kind_summary(kind),
 		"expected_minutes": DifficultyTier.apply_mission(mission, tier).get("expected_minutes", []) if not mission.is_empty() else [],
 		"best_seconds": _settings.best_time(_world_record_id(String(entry["id"]), kind), tier) if _settings else 0.0,
+		"best_score": best_score,
+		"medal": MissionMedals.medal_for(best_score, MissionMedals.world_thresholds(kind, tier)),
 	}
 
 ## Best scores and times for the world are kept per city, district kind, and tier.
 func _world_record_id(city_id: String, kind: String) -> String:
-	return "world:%s:%s" % [city_id, kind]
+	return WorldMap.record_id(city_id, kind)
 
 ## Deploys the picked district of the picked city at the city's tier.
 func _start_world_mission() -> void:
@@ -652,6 +659,7 @@ func _finish_world_mission(victory: bool, score: int) -> Dictionary:
 	var result := {"operation_complete": false, "sealed": sealed_before}
 	if victory and _settings:
 		_previous_best_time = _settings.best_time(_world_record_id(city_id, kind), _active_tier)
+		_previous_best_score = _settings.best_score(_world_record_id(city_id, kind), _active_tier)
 		_settings.record_score(_world_record_id(city_id, kind), score, _active_tier)
 		_settings.record_time(_world_record_id(city_id, kind), _last_seconds, _active_tier)
 		if moved:
@@ -834,6 +842,8 @@ func _on_round_finished(outcome: StringName, score: int) -> void:
 	_last_debrief = _round.get_debrief(outcome) if _round else ""
 	_last_seconds = _round.elapsed_seconds if _round else 0.0
 	_previous_best_time = 0.0
+	_previous_best_score = 0
+	_last_stats = _round.stats.to_report() if _round else {}
 	_next_mission_id = ""
 	_sealed_before = -1
 	_world_result = {}
@@ -850,6 +860,7 @@ func _on_round_finished(outcome: StringName, score: int) -> void:
 	elif outcome == &"victory" and _settings and not _debug_run and not MissionCatalog.is_debug_mission(_active_mission_id):
 		_sealed_before = _settings.cleared_missions.size()
 		_previous_best_time = _settings.best_time(_active_mission_id, _active_tier)
+		_previous_best_score = _settings.best_score(_active_mission_id, _active_tier)
 		_settings.mark_mission_cleared(_active_mission_id)
 		_settings.record_score(_active_mission_id, score, _active_tier)
 		_settings.record_time(_active_mission_id, _last_seconds, _active_tier)
@@ -872,13 +883,15 @@ func _show_results() -> void:
 
 ## What the results panels show. The city entries are after the round; the mission and the next
 ## site carry their expected times at the tier the round was played at, which Retry and Next keep.
+## Both kinds carry the round's stats, its medal, and the best score and medal at that tier.
 func _results_report() -> Dictionary:
 	if not _world_result.is_empty():
 		var world_node: Dictionary = _world_result.get("node", {})
 		var city_id := String((_world_result.get("entry", {}) as Dictionary).get("id", ""))
 		var kind := String(world_node.get("kind", WorldMap.KIND_SINGLE))
 		var entry := WorldMap.city_entry(_settings, city_id)
-		return {
+		var world_best: int = _settings.best_score(_world_record_id(city_id, kind), _active_tier) if _settings else 0
+		return _with_medals({
 			# The city map as it stands now, for the pressable section and the district card.
 			"city": _city_status(entry) if entry.get("playable", false) else {},
 			"picked": _results_picked,
@@ -891,9 +904,10 @@ func _results_report() -> Dictionary:
 			"tier": _active_tier,
 			"world": _world_result,
 			"offer_training": _last_outcome == &"defeat",
-		}
+		}, MissionMedals.world_thresholds(kind, _active_tier), world_best)
 	var entries := MissionCatalog.operation_entries(_settings)
-	return {
+	var best_score: int = _settings.best_score(_active_mission_id, _active_tier) if _settings else 0
+	return _with_medals({
 		"outcome": _last_outcome,
 		"score": _last_score,
 		"debrief": _last_debrief,
@@ -906,7 +920,17 @@ func _results_report() -> Dictionary:
 		"sealed_before": _sealed_before,
 		"entries": entries,
 		"offer_training": _last_outcome == &"defeat",
-	}
+	}, MissionMedals.operation_thresholds(_active_mission_id, _active_tier), best_score)
+
+## A results report with the round's stats, the medal this round earned (a victory only), and the
+## best score and its medal at the tier played.
+func _with_medals(report: Dictionary, medal_thresholds: Dictionary, best_score: int) -> Dictionary:
+	report["stats"] = _last_stats
+	report["previous_best_score"] = _previous_best_score
+	report["best_score"] = best_score
+	report["medal"] = MissionMedals.medal_for(_last_score, medal_thresholds) if _last_outcome == &"victory" else ""
+	report["best_medal"] = MissionMedals.medal_for(best_score, medal_thresholds)
+	return report
 
 ## The city entry for a mission (a debug drill has none, so it is built from the catalog), with
 ## its expected time at the active tier.

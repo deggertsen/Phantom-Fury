@@ -68,10 +68,10 @@ Still open from those phases:
 
 Fitness is the product. The tutorial operations are the on-ramp; the world map is where the workout lives.
 
-- [ ] Session stats on the after-action report: punches thrown, resolves by type, crits, longest chain, active minutes, calorie estimate.
+- [x] Session stats on the after-action report: punches thrown, resolves by type, crits, longest chain, active minutes, calorie estimate. Built 2026-11-01 (`SessionStats`, owned by `RoundController`): on the left results panel for Breach Night and world missions, after a defeat too. The calorie estimate is a stated MET model (8 to 10 kcal per active minute at 75 kg); see [Workout_Stats.md](Workout_Stats.md).
 - [x] Persist a best score per operation (`GameSettings.record_score`; Chen's "new record" victory line uses it).
-- [ ] Show the best score on Operations and on results, so a player can see that lures and chains pay.
-- [ ] Medals per operation (bronze, silver, gold) from score thresholds that reward crits and unbroken chains.
+- [x] Show the best score on Operations and on results, so a player can see that lures and chains pay. Built 2026-11-01: results (with NEW BEST SCORE called out like NEW BEST TIME), the site and district cards, and sealed sites on the Breach Night map.
+- [x] Medals per operation (bronze, silver, gold) from score thresholds that reward crits and unbroken chains. Built 2026-11-01 (`MissionMedals`): par per mission and tier from its own waves, bronze for any clear, silver at 70% of par, gold at par; derived from the best score, so nothing new is saved. Rule, numbers, and the known limits (a harder punch scores less over a mission) in [Workout_Stats.md](Workout_Stats.md). Thresholds want tuning from testers' scores.
 - [ ] Endless "Hold the Breach" mode: cycle the existing wave tables with rising speed and shrinking telegraph scale until the failsafe fires. Length options 10, 20, 30 minutes.
 - [ ] Mission length: five to ten minutes of actual play per mission from OP-02 on; OP-01 stays short. With no time limit, length comes from rift health, spawn interval, and `max_live`; retune those and time real runs on the headset.
 - [x] Expected mission time on every mission card: an `expected_minutes` range per operation ("5 TO 9 MIN") with the player's best time beside it once they have one. The ranges are estimates from the wave tables; replace them from timed headset runs.

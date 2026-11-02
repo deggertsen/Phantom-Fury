@@ -144,6 +144,8 @@ func _add_site(entry: Dictionary, center: Vector2) -> void:
 	elif cleared:
 		var best := float(entry.get("best_seconds", 0.0))
 		sub.text = "BEST %s" % _clock(best) if best > 0.0 else "SEALED"
+		if int(entry.get("best_score", 0)) > 0:
+			sub.text += "  •  %s" % grouped(int(entry["best_score"]))
 		sub.add_theme_color_override("font_color", COLOR_MUTED)
 	elif live:
 		sub.text = "LIVE BREACH"
@@ -309,6 +311,8 @@ func _draw_marker(entry: Dictionary, center: Vector2) -> void:
 		draw_arc(center, radius, 0.0, TAU, 48, COLOR_SEALED, 3.0 if mission_id == _highlight_id else 2.0, true)
 		var tick := radius * 0.42
 		draw_polyline(PackedVector2Array([center + Vector2(-tick, 0.0), center + Vector2(-tick * 0.25, tick * 0.7), center + Vector2(tick, -tick * 0.6)]), COLOR_SEALED, 3.0, true)
+		# The medal the best score at this difficulty earned, pinned to the marker's shoulder.
+		MedalBadge.draw_medal(self, center + Vector2(radius * 0.78, -radius * 0.62), maxf(radius * 0.42, 7.0), String(entry.get("medal", "")))
 		if mission_id == _selected_id and _interactive:
 			draw_arc(center, radius + 5.0, 0.0, TAU, 48, COLOR_SELECT, 2.0, true)
 	elif unlocked:
@@ -361,3 +365,12 @@ func _entry(mission_id: String) -> Dictionary:
 func _clock(seconds: float) -> String:
 	var whole := maxi(floori(seconds), 0)
 	return "%d:%02d" % [whole / 60, whole % 60]
+
+## "12,840": a score with its thousands grouped. The wrap panels use it too.
+static func grouped(value: int) -> String:
+	var digits := str(absi(value))
+	var out := ""
+	while digits.length() > 3:
+		out = "," + digits.substr(digits.length() - 3) + out
+		digits = digits.substr(0, digits.length() - 3)
+	return ("-" if value < 0 else "") + digits + out
