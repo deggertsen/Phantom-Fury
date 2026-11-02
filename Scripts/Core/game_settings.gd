@@ -225,9 +225,33 @@ func clear_mission_progress() -> void:
 	world_progress = {}
 	pending_mission_id = ""
 
-func reset_mission_progress() -> void:
+## Reset from Settings: the app as it was on first launch. Progress, bests and medals, the
+## training record, the world and difficulty choices, and the audio, haptic and comfort
+## settings all go back to their defaults (David, 2026-11-01: "as if I'm opening the app for the
+## first time"). The run log is tuning data, not profile, and stays.
+func reset_to_first_launch() -> void:
 	clear_mission_progress()
+	tutorial_completed = false
+	difficulty_tier = DifficultyTier.DEFAULT
+	home_city = ""
+	world_assist = false
+	master_db = 0.0
+	music_db = -8.0
+	sfx_db = -8.0
+	critical_db = -8.0
+	var had_own_music := own_music
+	own_music = false
+	haptic_scale = 1.0
+	XRToolsUserSettings.haptics_scale = haptic_scale
+	XRToolsUserSettings.save()
+	reduced_flashes = false
+	apply_audio()
 	save_settings()
+	if had_own_music:
+		own_music_changed.emit(own_music)
+
+func reset_mission_progress() -> void:
+	reset_to_first_launch()
 
 func _snap_volumes(persist: bool) -> void:
 	# The buses stay in decibels. The steps are what the settings screen calls OFF through 100%.

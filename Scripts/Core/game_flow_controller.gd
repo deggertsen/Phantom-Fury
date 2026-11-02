@@ -286,10 +286,14 @@ func _on_menu_action(action: StringName) -> void:
 			_state = STATE_SETTINGS
 			_render_settings()
 		&"reset_confirm":
+			# A first launch: the world map comes up as a new recruit sees it.
 			if _settings:
-				_settings.reset_mission_progress()
-			_state = STATE_SETTINGS
-			_render_settings()
+				_settings.reset_to_first_launch()
+			_world_filter = "all"
+			_world_region_id = ""
+			_selected_city_id = ""
+			_selected_node_id = ""
+			_show_world_map()
 		&"settings_back":
 			if _previous_state == STATE_PAUSED:
 				_show_pause_menu()

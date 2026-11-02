@@ -117,11 +117,11 @@ func show_settings(music_text: String, effects_text: String, haptics_text: Strin
 	))
 	settings_stack.add_child(_make_action_button(
 		&"reset_progress",
-		"RESET MISSION PROGRESS\nCLEARED CONTRACTS RETURN TO LOCKED",
+		"RESET TO FIRST LAUNCH\nEVERYTHING BACK TO DAY ONE",
 		COLOR_RED,
 		Vector2(0, 72)
 	))
-	var back_text := "BACK TO PAUSE" if from_pause else "BACK TO CITY MAP"
+	var back_text := "BACK TO PAUSE" if from_pause else "BACK TO THE MAP"
 	_content.add_child(_make_action_button(&"settings_back", back_text, COLOR_BLUE, Vector2(0, 72), true))
 	var bottom_spacer := Control.new()
 	bottom_spacer.custom_minimum_size.y = 6
@@ -164,11 +164,11 @@ func show_pause(training: bool = false) -> void:
 	_set_footer("POINT + TRIGGER TO SELECT  •  HOLD META BUTTON TO RECENTER")
 
 func show_reset_confirmation() -> void:
-	_begin_view(&"CONFIRM", "RSF // STRIKER PROFILE", "RESET MISSION PROGRESS?", "CLEARED CONTRACTS RETURN TO LOCKED", COLOR_RED)
-	_add_copy("AUDIO AND TRAINING STAY", "Music, effects, haptics, and the training record are left alone.", COLOR_MUTED)
-	_content.add_child(_make_action_button(&"reset_cancel", "KEEP PROGRESS", COLOR_GREEN, Vector2(0, 92), true))
-	_content.add_child(_make_action_button(&"reset_confirm", "RESET PROGRESS", COLOR_RED, Vector2(0, 92)))
-	_set_footer("SELECT KEEP PROGRESS TO LEAVE YOUR CONTRACTS SEALED")
+	_begin_view(&"CONFIRM", "RSF // STRIKER PROFILE", "RESET TO FIRST LAUNCH?", "AS IF THE APP HAD NEVER RUN", COLOR_RED)
+	_add_copy("EVERYTHING GOES", "The war, your bests and medals, the training record, the world and difficulty choices, and the audio, haptic, and comfort settings all return to their defaults.", COLOR_MUTED)
+	_content.add_child(_make_action_button(&"reset_cancel", "KEEP EVERYTHING", COLOR_GREEN, Vector2(0, 92), true))
+	_content.add_child(_make_action_button(&"reset_confirm", "RESET EVERYTHING", COLOR_RED, Vector2(0, 92)))
+	_set_footer("SELECT KEEP EVERYTHING TO LEAVE YOUR WAR AS IT IS")
 
 func show_abort_confirmation() -> void:
 	_begin_view(&"CONFIRM", "RSF // MISSION CONTROL", "END CURRENT MISSION?", "UNSAVED MISSION PROGRESS WILL BE LOST", COLOR_RED)

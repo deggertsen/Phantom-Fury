@@ -19,43 +19,43 @@ How to read it:
 | OP-01 FIRST LIGHT | Assist | 4 | 306 | 24 (18–28) | 3 | 15.4 | 1.21 | 0.79 | 1.9 (1.6–2.2) | -0% | 2–3 | 2–3 | yes | 7.0 |
 | OP-01 FIRST LIGHT | Standard | 4 | 320 | 25 (19–29) | 3 | 16.0 | 0.97 | 0.93 | 1.9 (1.6–2.2) | +0% | 2–3 | 2–3 | yes | 10.7 |
 | OP-01 FIRST LIGHT | Operator | 4 | 334 | 26 (20–30) | 3 | 16.7 | 0.82 | 1.04 | 1.9 (1.6–2.2) | +0% | 2–3 | 2–3 | yes | 14.7 |
-| OP-01 FIRST LIGHT | Full Res | 4 | 352 | 27 (21–32) | 3 | 16.0 | 0.97 | 0.93 | 2.1 (1.7–2.4) | +8% | 2–3 | 2–3 | yes | 10.9 |
+| OP-01 FIRST LIGHT | Full Res | 4 | 644 | 50 (38–58) | 5 | 32.0 | 0.97 | 0.93 | 2.1 (1.7–2.4) | +8% | 2–3 | 2–3 | yes | 20.0 |
 | OP-02 WIDEN THE RING | Assist | 12 | 1228 | 94 (73–111) | 4 | 18.3 | 1.03 | 0.89 | 6.4 (5.2–7.3) | -0% | 5–9 | 5–9 | yes | 11.4 |
 | OP-02 WIDEN THE RING | Standard | 12 | 1280 | 98 (76–116) | 4 | 19.1 | 0.82 | 1.05 | 6.4 (5.2–7.3) | +0% | 5–9 | 5–9 | yes | 17.4 |
 | OP-02 WIDEN THE RING | Operator | 12 | 1332 | 102 (79–121) | 4 | 19.9 | 0.70 | 1.18 | 6.4 (5.2–7.3) | -0% | 5–9 | 5–9 | yes | 23.8 |
-| OP-02 WIDEN THE RING | Full Res | 12 | 1408 | 108 (83–127) | 4 | 19.1 | 0.82 | 1.05 | 6.9 (5.6–7.9) | +8% | 5–9 | 6–10 | yes | 17.7 |
+| OP-02 WIDEN THE RING | Full Res | 12 | 2216 | 170 (131–201) | 6 | 38.2 | 0.82 | 1.05 | 6.9 (5.6–7.9) | +8% | 5–9 | 6–10 | yes | 27.8 |
 | OP-03 CHEN'S GAMBIT | Assist | 12 | 1380 | 106 (82–125) | 4 | 22.1 | 0.92 | 0.99 | 6.0 (4.9–6.9) | -0% | 5–8 | 5–8 | yes | 16.8 |
 | OP-03 CHEN'S GAMBIT | Standard | 12 | 1440 | 111 (85–130) | 4 | 23.0 | 0.73 | 1.16 | 6.0 (4.9–6.9) | +0% | 5–8 | 5–8 | yes | 25.7 |
 | OP-03 CHEN'S GAMBIT | Operator | 12 | 1500 | 115 (89–136) | 4 | 24.0 | 0.62 | 1.30 | 6.0 (4.9–6.9) | -0% | 5–8 | 5–8 | yes | 35.3 |
-| OP-03 CHEN'S GAMBIT | Full Res | 12 | 1584 | 122 (94–143) | 4 | 23.0 | 0.73 | 1.16 | 6.5 (5.3–7.4) | +8% | 5–8 | 5–9 | yes | 26.2 |
+| OP-03 CHEN'S GAMBIT | Full Res | 12 | 2068 | 159 (122–187) | 6 | 46.0 | 0.73 | 1.16 | 6.5 (5.3–7.4) | +8% | 5–8 | 5–9 | yes | 34.2 |
 | OP-04 DOUBLE BREACH | Assist | 16 | 1992 | 153 (118–180) | 4 | 38.2 | 0.89 | 1.00 | 6.7 (5.5–7.6) | -3% | 6–10 | 6–9 | yes | 22.6 |
 | OP-04 DOUBLE BREACH | Standard | 16 | 2080 | 160 (123–188) | 4 | 39.8 | 0.71 | 1.18 | 6.9 (5.7–7.9) | +0% | 6–10 | 6–10 | yes | 33.6 |
 | OP-04 DOUBLE BREACH | Operator | 16 | 2168 | 167 (128–196) | 4 | 41.4 | 0.61 | 1.32 | 7.2 (5.9–8.1) | +3% | 6–10 | 6–10 | yes | 44.7 |
-| OP-04 DOUBLE BREACH | Full Res | 16 | 2288 | 176 (135–207) | 4 | 39.8 | 0.71 | 1.18 | 7.5 (6.1–8.5) | +8% | 6–10 | 6–10 | yes | 34.3 |
+| OP-04 DOUBLE BREACH | Full Res | 16 | 2288 | 176 (135–207) | 8 | 79.5 | 0.71 | 1.18 | 7.5 (6.1–8.5) | +8% | 6–10 | 6–10 | yes | 34.3 |
 | OP-05 OPEN ARC | Assist | 16 | 1992 | 153 (118–180) | 4 | 38.2 | 0.89 | 1.00 | 6.7 (5.5–7.6) | -3% | 6–10 | 6–9 | yes | 22.6 |
 | OP-05 OPEN ARC | Standard | 16 | 2080 | 160 (123–188) | 4 | 39.8 | 0.71 | 1.18 | 6.9 (5.7–7.9) | +0% | 6–10 | 6–10 | yes | 33.6 |
 | OP-05 OPEN ARC | Operator | 16 | 2168 | 167 (128–196) | 4 | 41.4 | 0.61 | 1.32 | 7.2 (5.9–8.1) | +3% | 6–10 | 6–10 | yes | 44.7 |
-| OP-05 OPEN ARC | Full Res | 16 | 2288 | 176 (135–207) | 4 | 39.8 | 0.71 | 1.18 | 7.5 (6.1–8.5) | +8% | 6–10 | 6–10 | yes | 34.3 |
+| OP-05 OPEN ARC | Full Res | 16 | 2288 | 176 (135–207) | 8 | 79.5 | 0.71 | 1.18 | 7.5 (6.1–8.5) | +8% | 6–10 | 6–10 | yes | 34.3 |
 | OP-06 THE MAW | Assist | 1 | 1536 | 118 (91–139) | 8 | 65.9 | 1.10 | 0.85 | 4.0 (3.1–4.7) | -4% | 3–6 | 3–6 | yes | 19.9 |
 | OP-06 THE MAW | Standard | 1 | 1600 | 123 (95–145) | 8 | 68.6 | 0.88 | 1.00 | 4.2 (3.3–4.9) | +0% | 3–6 | 3–6 | yes | 29.3 |
 | OP-06 THE MAW | Operator | 1 | 1664 | 128 (98–151) | 8 | 71.4 | 0.75 | 1.12 | 4.4 (3.4–5.1) | +4% | 3–6 | 3–7 | yes | 38.6 |
-| OP-06 THE MAW | Full Res | 1 | 1760 | 97 (78–111) | 8 | 68.6 | 0.88 | 1.00 | 4.5 (3.8–5.1); holds 4.6 | +10% | 4–7 | 4–7 | yes | 21.2 |
+| OP-06 THE MAW | Full Res | 1 | 1760 | 97 (78–111) | 10 | 137.1 | 0.88 | 1.00 | 4.5 (3.8–5.1); holds 4.6 | +10% | 4–7 | 4–7 | yes | 21.2 |
 | District: CLEAN SEAL | Assist | 4 | 614 | 47 (36–56) | 3 | 18.1 | 1.07 | 0.88 | 3.0 (2.4–3.5) | -0% | 2–4 | 2–4 | yes | 11.3 |
 | District: CLEAN SEAL | Standard | 4 | 640 | 49 (38–58) | 3 | 18.8 | 0.85 | 1.03 | 3.0 (2.4–3.5) | +0% | 2–4 | 2–4 | yes | 17.3 |
 | District: CLEAN SEAL | Operator | 4 | 666 | 51 (39–60) | 3 | 19.6 | 0.73 | 1.15 | 3.0 (2.4–3.5) | -0% | 2–4 | 2–4 | yes | 23.8 |
-| District: CLEAN SEAL | Full Res | 4 | 704 | 54 (42–64) | 3 | 18.8 | 0.85 | 1.03 | 3.3 (2.6–3.8) | +9% | 2–4 | 3–5 | yes | 17.5 |
+| District: CLEAN SEAL | Full Res | 4 | 1124 | 86 (67–102) | 5 | 37.6 | 0.85 | 1.03 | 3.3 (2.6–3.8) | +9% | 2–4 | 3–5 | yes | 28.0 |
 | District: CROSSFIRE | Assist | 4 | 1038 | 80 (61–94) | 4 | 36.7 | 0.95 | 0.97 | 3.1 (2.4–3.5) | -3% | 3–5 | 2–4 | yes | 23.5 |
 | District: CROSSFIRE | Standard | 4 | 1080 | 83 (64–98) | 4 | 38.2 | 0.76 | 1.14 | 3.2 (2.5–3.7) | +0% | 3–5 | 3–5 | yes | 34.7 |
 | District: CROSSFIRE | Operator | 4 | 1122 | 86 (66–102) | 4 | 39.8 | 0.64 | 1.28 | 3.3 (2.6–3.8) | +3% | 3–5 | 3–5 | yes | 46.0 |
-| District: CROSSFIRE | Full Res | 4 | 1188 | 91 (70–108) | 4 | 38.2 | 0.76 | 1.14 | 3.4 (2.7–4.0) | +9% | 3–5 | 3–5 | yes | 35.2 |
+| District: CROSSFIRE | Full Res | 4 | 1188 | 91 (70–108) | 8 | 76.3 | 0.76 | 1.14 | 3.4 (2.7–4.0) | +9% | 3–5 | 3–5 | yes | 35.2 |
 | District: COVER THE TEAM | Assist | 1 | 2400 | 59 (54–62) | 3 | 18.0 | 1.10 | 0.85 | 3.4 (3.1–3.5) | -3% | 3–4 | 3–4 | yes | 11.9 |
 | District: COVER THE TEAM | Standard | 1 | 2500 | 63 (57–66) | 3 | 18.8 | 0.88 | 1.00 | 3.5 (3.2–3.6) | +0% | 3–4 | 3–4 | yes | 18.2 |
 | District: COVER THE TEAM | Operator | 1 | 2600 | 67 (61–71) | 3 | 19.5 | 0.75 | 1.12 | 3.5 (3.2–3.7) | +3% | 3–4 | 3–4 | yes | 25.0 |
-| District: COVER THE TEAM | Full Res | 1 | 2750 | 69 (63–73) | 3 | 18.8 | 0.88 | 1.00 | 3.8 (3.5–4.0) | +10% | 3–4 | 3–4 | yes | 18.3 |
+| District: COVER THE TEAM | Full Res | 1 | 4400 | 111 (101–117) | 5 | 37.5 | 0.88 | 1.00 | 3.8 (3.5–4.0) | +10% | 3–4 | 3–4 | yes | 29.2 |
 | District: SHUT THE MAW | Assist | 1 | 1536 | 118 (91–139) | 8 | 65.9 | 1.10 | 0.85 | 4.0 (3.1–4.7) | -4% | 3–6 | 3–6 | yes | 19.9 |
 | District: SHUT THE MAW | Standard | 1 | 1600 | 123 (95–145) | 8 | 68.6 | 0.88 | 1.00 | 4.2 (3.3–4.9) | +0% | 3–6 | 3–6 | yes | 29.3 |
 | District: SHUT THE MAW | Operator | 1 | 1664 | 128 (98–151) | 8 | 71.4 | 0.75 | 1.12 | 4.4 (3.4–5.1) | +4% | 3–6 | 3–7 | yes | 38.6 |
-| District: SHUT THE MAW | Full Res | 1 | 1760 | 97 (78–111) | 8 | 68.6 | 0.88 | 1.00 | 4.5 (3.8–5.1); holds 4.6 | +10% | 4–7 | 4–7 | yes | 21.2 |
+| District: SHUT THE MAW | Full Res | 1 | 1760 | 97 (78–111) | 10 | 137.1 | 0.88 | 1.00 | 4.5 (3.8–5.1); holds 4.6 | +10% | 4–7 | 4–7 | yes | 21.2 |
 
 ## District kinds against their sibling operations
 
@@ -66,7 +66,7 @@ A district kind's pressure per minute should sit within 15% of its sibling's at 
 | CLEAN SEAL | widen_the_ring | Assist | 11.3 | 11.4 | 1.00 | 0.47 | yes |
 | CLEAN SEAL | widen_the_ring | Standard | 17.3 | 17.4 | 1.00 | 0.47 | yes |
 | CLEAN SEAL | widen_the_ring | Operator | 23.8 | 23.8 | 1.00 | 0.47 | yes |
-| CLEAN SEAL | widen_the_ring | Full Res | 17.5 | 17.7 | 0.99 | 0.48 | yes |
+| CLEAN SEAL | widen_the_ring | Full Res | 28.0 | 27.8 | 1.01 | 0.48 | yes |
 | CROSSFIRE | double_breach | Assist | 23.5 | 22.6 | 1.04 | 0.46 | yes |
 | CROSSFIRE | double_breach | Standard | 34.7 | 33.6 | 1.03 | 0.46 | yes |
 | CROSSFIRE | double_breach | Operator | 46.0 | 44.7 | 1.03 | 0.46 | yes |
@@ -74,7 +74,7 @@ A district kind's pressure per minute should sit within 15% of its sibling's at 
 | COVER THE TEAM | widen_the_ring | Assist | 11.9 | 11.4 | 1.05 | 0.53 | yes |
 | COVER THE TEAM | widen_the_ring | Standard | 18.2 | 17.4 | 1.05 | 0.54 | yes |
 | COVER THE TEAM | widen_the_ring | Operator | 25.0 | 23.8 | 1.05 | 0.56 | yes |
-| COVER THE TEAM | widen_the_ring | Full Res | 18.3 | 17.7 | 1.03 | 0.55 | yes |
+| COVER THE TEAM | widen_the_ring | Full Res | 29.2 | 27.8 | 1.05 | 0.55 | yes |
 | SHUT THE MAW | the_maw | Assist | 19.9 | 19.9 | 1.00 | 1.00 | yes |
 | SHUT THE MAW | the_maw | Standard | 29.3 | 29.3 | 1.00 | 1.00 | yes |
 | SHUT THE MAW | the_maw | Operator | 38.6 | 38.6 | 1.00 | 1.00 | yes |

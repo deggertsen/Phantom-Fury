@@ -255,10 +255,10 @@ func _validate_menu_surface() -> void:
 			failures.append("Opening settings again did not start at the top")
 	menu.show_reset_confirmation()
 	await process_frame
-	var keep := _find_button(menu, "KEEP PROGRESS")
-	var wipe := _find_button(menu, "RESET PROGRESS")
+	var keep := _find_button(menu, "KEEP EVERYTHING")
+	var wipe := _find_button(menu, "RESET EVERYTHING")
 	if keep == null or wipe == null:
-		failures.append("Progress reset does not ask for confirmation")
+		failures.append("The first-launch reset does not ask for confirmation")
 	elif String(keep.get_meta(&"menu_action")) != "reset_cancel" or String(wipe.get_meta(&"menu_action")) != "reset_confirm":
 		failures.append("Progress reset confirmation actions are wired wrong")
 	var levels = load("res://Scripts/Core/game_settings.gd").new()
@@ -502,7 +502,7 @@ func _validate_world_regions() -> void:
 		ids.append(raw["id"])
 	if ids != ["north_america", "south_america", "europe", "africa", "asia", "oceania"]:
 		failures.append("The world map does not have one region per continent: %s" % [ids])
-	var expected := {"jakarta": "asia", "tehran": "asia", "cairo": "africa", "moscow": "europe", "berlin": "europe", "perth": "oceania", "sydney": "oceania", "bogota": "south_america", "mexico_city": "north_america"}
+	var expected := {"jakarta": "oceania", "bangkok": "oceania", "manila": "oceania", "mumbai": "asia", "tokyo": "asia", "tehran": "asia", "cairo": "africa", "moscow": "europe", "berlin": "europe", "perth": "oceania", "sydney": "oceania", "bogota": "south_america", "mexico_city": "north_america"}
 	for city_id in expected:
 		if WorldMap.region_of(city_id) != expected[city_id]:
 			failures.append("%s is in %s, not %s" % [city_id, WorldMap.region_of(city_id), expected[city_id]])
@@ -515,29 +515,36 @@ func _validate_world_regions() -> void:
 					failures.append("%s is outside %s's box" % [raw["id"], region_raw["id"]])
 		if homes != 1:
 			failures.append("%s is in %d regions" % [raw["id"], homes])
-	# Landmarks on the right side of each split: Darwin and Wellington are Oceania, not Asia;
-	# Paris is Europe and Tripoli Africa; Riyadh is Asia.
-	var landmarks := {"oceania": [[130.8, -12.5], [174.8, -41.3]], "europe": [[2.3, 48.9]], "africa": [[13.2, 32.9]], "asia": [[46.7, 24.7]]}
+	# Landmarks on the right side of each split: Darwin, Wellington, Hong Kong and Bali are
+	# Oceania, not Asia; Colombo and Riyadh are Asia; Paris is Europe and Tripoli Africa.
+	var landmarks := {"oceania": [[130.8, -12.5], [174.8, -41.3], [114.2, 22.3], [115.2, -8.4]], "europe": [[2.3, 48.9]], "africa": [[13.2, 32.9]], "asia": [[46.7, 24.7], [79.9, 6.9]]}
 	for region_raw in WorldMap.REGIONS:
 		for point in landmarks.get(region_raw["id"], []):
 			if not WorldMap.region_has(region_raw, float(point[0]), float(point[1])):
 				failures.append("%s does not cover %s" % [region_raw["id"], point])
-		if region_raw["id"] == "asia" and WorldMap.region_has(region_raw, 130.8, -12.5):
-			failures.append("Asia crosses into Australia")
+		if region_raw["id"] == "asia" and (WorldMap.region_has(region_raw, 130.8, -12.5) or WorldMap.region_has(region_raw, 114.2, 22.3)):
+			failures.append("Asia crosses into Australia or Southeast Asia")
 	var projected := WorldMap.regions()
 	for index in projected.size():
 		var region_data: Dictionary = projected[index]
-		var degrees: Array = WorldMap.REGIONS[index]["box"]
 		var rect: Rect2 = region_data["box"]
-		if degrees.size() != 4 or float(degrees[0]) >= float(degrees[2]) or float(degrees[1]) >= float(degrees[3]) or float(degrees[0]) < -180.0 or float(degrees[2]) > 180.0 or float(degrees[1]) < WorldCoastline.LAT_BOTTOM or float(degrees[3]) > WorldCoastline.LAT_TOP:
-			failures.append("%s's box is not on the map: %s" % [region_data["id"], degrees])
+		for degrees in WorldMap.region_boxes(WorldMap.REGIONS[index]):
+			if degrees.size() != 4 or float(degrees[0]) >= float(degrees[2]) or float(degrees[1]) >= float(degrees[3]) or float(degrees[0]) < -180.0 or float(degrees[2]) > 180.0 or float(degrees[1]) < WorldCoastline.LAT_BOTTOM or float(degrees[3]) > WorldCoastline.LAT_TOP:
+				failures.append("%s's box is not on the map: %s" % [region_data["id"], degrees])
 		if not rect.has_point(region_data["label_point"]):
 			failures.append("%s's label is outside its box" % region_data["id"])
 		if rect.size.x < 100.0 or rect.size.y < 100.0:
 			failures.append("%s's box is too small to pick in VR: %s" % [region_data["id"], rect.size])
+		var own: Array = region_data["boxes"]
+		for a in own.size():
+			for b in range(a + 1, own.size()):
+				if (own[a] as Rect2).intersects(own[b]):
+					failures.append("%s's own boxes overlap" % region_data["id"])
 		for other in projected.slice(index + 1):
-			if rect.intersects(other["box"]):
-				failures.append("%s and %s overlap" % [region_data["id"], other["id"]])
+			for mine in own:
+				for theirs in other["boxes"]:
+					if (mine as Rect2).intersects(theirs):
+						failures.append("%s and %s overlap" % [region_data["id"], other["id"]])
 
 ## Every district kind runs about as long as an operation: Clean Seal and Crossfire seal four
 ## rifts, Cover the Team holds one for three to five minutes, Shut the Maw is The Maw's rift.
@@ -1197,7 +1204,12 @@ func _validate_difficulty_tiers() -> void:
 		if round_controller.current_tier() != tier or rift == null:
 			failures.append("%s did not reach the round" % tier)
 		else:
-			var expected_health := maxi(int(round(100.0 * float(info["health"]))), 1)
+			# What the round's rift carries is what apply_mission gives the wave: the tier's
+			# health, and on a pace tier (Full Resonance) the feed's kill-rate factor on top.
+			var tiered_wave: Dictionary = DifficultyTier.apply_mission({"id": "tier_check", "rifts": [base_wave]}, tier)["rifts"][0]
+			var expected_health := int(tiered_wave["health"])
+			if expected_health == maxi(int(round(100.0 * float(info["health"]))), 1) and bool(info.get("pace_health", false)):
+				failures.append("%s is a pace tier but its health did not rise with the feed" % tier)
 			if rift.maximum_health != expected_health or not is_equal_approx(rift.spawn_interval, 3.0 * float(info["interval"])):
 				failures.append("%s rift has %d health every %.2f s, expected %d every %.2f s" % [tier, rift.maximum_health, rift.spawn_interval, expected_health, 3.0 * float(info["interval"])])
 			var phantom: Phantom = null
@@ -1282,9 +1294,16 @@ func _validate_difficulty_tiers() -> void:
 	var maw_entry: Dictionary = entries[entries.size() - 1]
 	if maw_entry.get("expected_minutes", []) != [4, 7]:
 		failures.append("The Full Resonance Maw card does not cover the boss: %s" % [maw_entry.get("expected_minutes", [])])
-	reloaded.reset_mission_progress()
-	if reloaded.difficulty_tier != DifficultyTier.FULL_RESONANCE or reloaded.best_time("first_light", DifficultyTier.FULL_RESONANCE) != 0.0:
-		failures.append("Reset Progress dropped the difficulty or kept a tier's record")
+	# The reset is a first launch: the difficulty goes back to Standard with the records.
+	reloaded.tutorial_completed = true
+	reloaded.world_assist = true
+	reloaded.music_db = -20.0
+	reloaded.reduced_flashes = true
+	reloaded.reset_to_first_launch()
+	if reloaded.difficulty_tier != DifficultyTier.DEFAULT or reloaded.best_time("first_light", DifficultyTier.FULL_RESONANCE) != 0.0:
+		failures.append("The first-launch reset kept the difficulty or a tier's record")
+	if reloaded.tutorial_completed or reloaded.world_assist or not is_equal_approx(reloaded.music_db, -8.0) or reloaded.reduced_flashes:
+		failures.append("The first-launch reset kept training, the world's assist choice, audio, or comfort")
 	levels.free()
 	reloaded.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

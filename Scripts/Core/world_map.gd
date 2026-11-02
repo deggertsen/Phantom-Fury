@@ -83,8 +83,11 @@ const REGIONS := [
 	{"id": "south_america", "name": "South America", "box": [-82, -57, -33, 10], "label": [-62, -12], "cities": ["bogota", "lima", "sao_paulo", "buenos_aires"]},
 	{"id": "europe", "name": "Europe", "box": [-25, 36, 45, 72], "label": [8, 64], "cities": ["berlin", "moscow"]},
 	{"id": "africa", "name": "Africa", "box": [-20, -36, 45, 36], "label": [20, 16], "cities": ["cairo", "lagos", "nairobi", "johannesburg"]},
-	{"id": "asia", "name": "Asia", "box": [45, -11, 180, 78], "label": [100, 52], "cities": ["tehran", "delhi", "mumbai", "beijing", "seoul", "tokyo", "bangkok", "manila", "jakarta"]},
-	{"id": "oceania", "name": "Oceania", "box": [110, -50, 180, -11], "label": [134, -22], "cities": ["perth", "sydney"]},
+	# Asia is two boxes: the mainland north of Hong Kong's latitude, and a South Asian pocket for
+	# India and Arabia. Oceania takes Southeast Asia and Indonesia with Australia (David,
+	# 2026-11-01), up to Hong Kong's latitude.
+	{"id": "asia", "name": "Asia", "boxes": [[45, 23, 180, 78], [45, 5, 95, 23]], "label": [100, 52], "cities": ["tehran", "delhi", "mumbai", "beijing", "seoul", "tokyo"]},
+	{"id": "oceania", "name": "Oceania", "box": [95, -50, 180, 23], "label": [134, -22], "cities": ["bangkok", "manila", "jakarta", "perth", "sydney"]},
 ]
 ## The side of the box the map closes in on when a city opens.
 const CITY_ZOOM_UNITS := 44.0
@@ -222,26 +225,48 @@ static func world_box() -> Rect2:
 	return Rect2(Vector2.ZERO, Vector2(WorldCoastline.WIDTH, WorldCoastline.HEIGHT))
 
 ## Every region with its projected label point and box.
+## Each region with its label point, its projected boxes (one button each), and "box", the
+## rectangle around them that the map zooms to.
 static func regions() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for raw in REGIONS:
 		var region_data: Dictionary = (raw as Dictionary).duplicate()
 		region_data["label_point"] = project(float(raw["label"][0]), float(raw["label"][1]))
+		var boxes: Array[Rect2] = []
+		for degrees in region_boxes(raw):
+			boxes.append(_degrees_box(degrees))
+		region_data["boxes"] = boxes
 		region_data["box"] = region_box(raw)
 		out.append(region_data)
 	return out
 
-## A region's authored box ([west, south, east, north] in degrees), projected.
+## A region's authored boxes ([west, south, east, north] in degrees): "boxes", or the one "box".
+static func region_boxes(raw: Dictionary) -> Array:
+	if raw.has("boxes"):
+		return raw["boxes"]
+	return [raw["box"]]
+
+## The projected rectangle around all of a region's boxes.
 static func region_box(raw: Dictionary) -> Rect2:
-	var box: Array = raw["box"]
-	var top_left := project(float(box[0]), float(box[3]))
-	var bottom_right := project(float(box[2]), float(box[1]))
+	var rect := Rect2()
+	var first := true
+	for degrees in region_boxes(raw):
+		var box := _degrees_box(degrees)
+		rect = box if first else rect.merge(box)
+		first = false
+	return rect
+
+static func _degrees_box(degrees: Array) -> Rect2:
+	var top_left := project(float(degrees[0]), float(degrees[3]))
+	var bottom_right := project(float(degrees[2]), float(degrees[1]))
 	return Rect2(top_left, bottom_right - top_left)
 
-## Whether a point in degrees is inside a region's authored box, edges included.
+## Whether a point in degrees is inside one of a region's authored boxes, edges included.
 static func region_has(raw: Dictionary, lon: float, lat: float) -> bool:
-	var box: Array = raw["box"]
-	return lon >= float(box[0]) and lon <= float(box[2]) and lat >= float(box[1]) and lat <= float(box[3])
+	for box in region_boxes(raw):
+		if lon >= float(box[0]) and lon <= float(box[2]) and lat >= float(box[1]) and lat <= float(box[3]):
+			return true
+	return false
 
 static func region(region_id: String) -> Dictionary:
 	for candidate in regions():
@@ -336,7 +361,7 @@ static func has_missions(state: String) -> bool:
 static func asks(state: String) -> String:
 	match state:
 		STATE_CONSUMED: return "Behind the front, out of reach. Nothing can be done here until the front is pushed back to it. No city is ever permanently lost."
-		STATE_OVERRUN: return "Squats, jumps, side-steps, and push-ups. Clear room to jump."
+		STATE_OVERRUN: return "A phantom every second or two. Squats, jumps, side-steps, and push-ups. Clear room to jump."
 		STATE_DANGER: return "Shorter tells, faster lunges. Hold the line while Chen's team seals from the pylons. Every hold here keeps the front off the next city."
 		STATE_THREATENED: return "Hands, block, dodge. Seal rifts and keep the front far away. Easy on the body; Assist is a session toggle."
 		_: return "No threat detected. There is nothing to fight here tonight; the front is far away."
