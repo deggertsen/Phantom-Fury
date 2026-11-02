@@ -463,7 +463,18 @@ static func parse_mission_id(mission_id_value: String) -> Dictionary:
 
 ## Best scores and times are kept per city, district kind, and tier.
 static func record_key(city_id: String, kind: String, tier_id: String) -> String:
-	return DifficultyTier.record_key("world:%s:%s" % [city_id, kind], tier_id)
+	return DifficultyTier.record_key(record_id(city_id, kind), tier_id)
+
+## The mission id GameSettings keeps a district's records under: one per city and kind.
+static func record_id(city_id: String, kind: String) -> String:
+	return "world:%s:%s" % [city_id, kind]
+
+## The id a mission's records live under: a district's city and kind, or an operation's own id.
+static func record_id_for(mission: Dictionary) -> String:
+	var world: Dictionary = mission.get("world", {})
+	if world.is_empty():
+		return String(mission.get("id", ""))
+	return record_id(String(world.get("city_id", "")), String(world.get("kind", KIND_SINGLE)))
 
 ## The estimate behind expected_minutes, made the way the catalog's were (see the note above
 ## MissionCatalog._first_light and Known_Issues.md): a kill takes about this much rift health,

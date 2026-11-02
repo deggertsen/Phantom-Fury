@@ -36,6 +36,9 @@ func _run_validation() -> void:
 	_validate_world_regions()
 	_validate_world_kinds()
 	await _validate_world_menu()
+	await _validate_session_stats()
+	await _validate_medals()
+	await _validate_workout_results()
 	_validate_district_sites()
 	await _validate_hold_the_line()
 	await _validate_punch_power()
@@ -3462,3 +3465,321 @@ func _hit(phantom: Phantom, hand: StringName, speed: float, on_lure: bool) -> vo
 	elif lure:
 		at += Vector3(0.0, -0.5, 0.0)
 	phantom.receive_strike({"hand_id": hand, "position": at, "direction": Vector3.FORWARD, "speed": speed})
+
+## A simulated round: strikes, resolves, a hit taken, a seal, and the clock produce known stats,
+## and the calorie estimate stays inside its band.
+func _validate_session_stats() -> void:
+	var container := Node3D.new()
+	container.add_to_group("PhantomContainer")
+	root.add_child(container)
+	var director := RiftDirector.new()
+	director.rift_manager_scene = load("res://Scenes/Rifts/rift_manager.tscn")
+	director.total_rifts = 1
+	root.add_child(director)
+	var life := LifeForceManager.new()
+	root.add_child(life)
+	var round_controller := RoundController.new()
+	round_controller.countdown_seconds = 0
+	root.add_child(round_controller)
+	await process_frame
+	await process_frame
+	round_controller.set_process(false)
+	round_controller.begin_round(MissionCatalog.get_mission("first_light"))
+	round_controller._process(0.0)
+	var landed := {"valid": true, "resolution_kind": &"strike"}
+	for _strike in 10:
+		round_controller.record_strike(landed)
+	round_controller.record_strike({"valid": false, "resolution_kind": &"wrong_hand"})
+	round_controller.record_strike({"valid": false, "resolution_kind": &"wrong_hand"})
+	round_controller.record_strike({"valid": false, "resolution_kind": &"not_open"})
+	var resolves: Array[Dictionary] = []
+	for _crit in 3:
+		resolves.append({"variant_id": &"yellow", "resolution_kind": &"sweet_spot", "sweet_spot": true, "base_score": 200})
+	for _plain in 2:
+		resolves.append({"variant_id": &"blue", "resolution_kind": &"strike", "base_score": 100})
+	for _block in 2:
+		resolves.append({"variant_id": &"green", "resolution_kind": &"two_hand_block", "base_score": 180})
+	resolves.append({"variant_id": &"pink", "resolution_kind": &"dodge", "on_beat": true, "base_score": 200})
+	for result in resolves:
+		director.phantom_resolved.emit(result)
+	# A hit taken is a miss and breaks the chain at eight; two more resolves start a new one.
+	director.player_damaged.emit(5.0)
+	for result in resolves.slice(0, 2):
+		director.phantom_resolved.emit(result)
+	director.rift_closed.emit(1, 1, 4)
+	for _second in 120:
+		round_controller._process(1.0)
+	round_controller.pause_round()
+	round_controller._process(30.0)
+	round_controller.resume_round()
+	var stats := round_controller.stats.to_report()
+	var expected := {"punches": 13, "rejected": 3, "wrong_hand": 2, "gold": 5, "blue": 2, "crits": 5, "blocks": 2, "dodges": 1, "misses": 1, "longest_chain": 8, "rifts_sealed": 1}
+	for key in expected:
+		if int(stats.get(key, -1)) != int(expected[key]):
+			failures.append("Session stats counted %s as %s, not %s" % [key, stats.get(key), expected[key]])
+	if not is_equal_approx(float(stats.get("active_seconds", 0.0)), 120.0):
+		failures.append("Session stats counted %s active seconds, not 120 (pause must not count)" % stats.get("active_seconds"))
+	# 13 punches over two active minutes: inside the 8 to 10 kcal a minute band, a little over its floor.
+	var calories := float(stats.get("calories", 0.0))
+	if calories < 16.0 or calories > 20.0 or calories <= 2.0 * SessionStats.kcal_per_minute(0.0):
+		failures.append("Two active minutes at 6.5 punches a minute estimated %.1f kcal" % calories)
+	if absf(SessionStats.kcal_per_minute(0.0) - 8.0) > 0.05 or absf(SessionStats.kcal_per_minute(SessionStats.PUNCH_RATE_CEILING * 2.0) - 10.0) > 0.05:
+		failures.append("The calorie band is not 8 to 10 kcal per active minute: %.2f to %.2f" % [SessionStats.kcal_per_minute(0.0), SessionStats.kcal_per_minute(60.0)])
+	if SessionStats.estimate_calories(0.0, 40) != 0.0:
+		failures.append("A round with no active time estimated calories")
+	round_controller.abandon_round()
+	round_controller.begin_round(MissionCatalog.get_mission("first_light"))
+	if round_controller.stats.punches != 0 or round_controller.stats.longest_chain != 0:
+		failures.append("A new round kept the last round's stats")
+	director.cleanup_round()
+	for node in [round_controller, life, director, container]:
+		node.queue_free()
+	await process_frame
+
+## Medals: each mission's own par from its waves, bronze for a clear without crits, silver for a
+## clean one, gold at par; the phantom numbers par uses match the phantoms; the best medal
+## follows the best score; and the thresholds rise with the tier.
+func _validate_medals() -> void:
+	for variant in ["yellow", "blue", "green", "pink"]:
+		var phantom := (load("res://Scenes/Phantoms/%s_phantom.tscn" % variant) as PackedScene).instantiate()
+		root.add_child(phantom)
+		await process_frame
+		var numbers: Dictionary = MissionMedals.VARIANTS[variant]
+		if phantom.base_score != int(numbers["base"]) or phantom.rift_damage != int(numbers["damage"]):
+			failures.append("MissionMedals has %s at %d points and %d damage; the phantom has %d and %d" % [variant, numbers["base"], numbers["damage"], phantom.base_score, phantom.rift_damage])
+		if numbers.has("crit_base") and (phantom.sweet_score != int(numbers["crit_base"]) or phantom.sweet_rift_damage != int(numbers["crit_damage"])):
+			failures.append("MissionMedals has the %s lure crit at %d and %d; the phantom has %d and %d" % [variant, numbers["crit_base"], numbers["crit_damage"], phantom.sweet_score, phantom.sweet_rift_damage])
+		phantom.queue_free()
+	await process_frame
+	var cases := {
+		"First Light": DifficultyTier.apply_mission(MissionCatalog.get_mission("first_light"), DifficultyTier.STANDARD),
+		"Clean Seal": DifficultyTier.apply_mission(WorldMap.build_mission({}, 0, {"kind": WorldMap.KIND_SINGLE}, DifficultyTier.STANDARD), DifficultyTier.STANDARD),
+	}
+	for case_name in cases:
+		var mission: Dictionary = cases[case_name]
+		var thresholds := MissionMedals.thresholds(mission)
+		var par := MissionMedals.par_score(mission)
+		var plain := MissionMedals.reference_score(mission, false, 3)
+		var clean := MissionMedals.reference_score(mission, false)
+		print("MEDALS %s: par %d, bronze %d, silver %d, gold %d; clear without crits %d, clean without crits %d" % [case_name, par, thresholds["bronze"], thresholds["silver"], thresholds["gold"], plain, clean])
+		if not (int(thresholds["bronze"]) < int(thresholds["silver"]) and int(thresholds["silver"]) < int(thresholds["gold"])):
+			failures.append("%s medal thresholds do not rise: %s" % [case_name, thresholds])
+		if MissionMedals.medal_for(plain, thresholds) != MissionMedals.BRONZE:
+			failures.append("%s: a clear with no crits and a broken chain (%d) earned %s, not bronze" % [case_name, plain, MissionMedals.medal_for(plain, thresholds)])
+		if MissionMedals.medal_for(clean, thresholds) != MissionMedals.SILVER:
+			failures.append("%s: a clean run with no crits (%d) earned %s, not silver" % [case_name, clean, MissionMedals.medal_for(clean, thresholds)])
+		if MissionMedals.medal_for(par, thresholds) != MissionMedals.GOLD:
+			failures.append("%s: a par run (%d) earned %s, not gold" % [case_name, par, MissionMedals.medal_for(par, thresholds)])
+		if MissionMedals.medal_for(0, thresholds) != "":
+			failures.append("%s: no score earned a medal" % case_name)
+	if MissionMedals.thresholds(cases["First Light"]) != MissionMedals.operation_thresholds("first_light", DifficultyTier.STANDARD):
+		failures.append("First Light's thresholds differ between the mission and its id")
+	if MissionMedals.par_score(cases["Clean Seal"]) == MissionMedals.par_score(cases["First Light"]):
+		failures.append("Clean Seal and First Light share a par; each mission needs its own")
+	var standard := int(MissionMedals.operation_thresholds("widen_the_ring", DifficultyTier.STANDARD)[MissionMedals.GOLD])
+	var operator := int(MissionMedals.operation_thresholds("widen_the_ring", DifficultyTier.OPERATOR)[MissionMedals.GOLD])
+	if operator <= standard:
+		failures.append("Widen the Ring's gold at Operator (%d) is not above Standard's (%d)" % [operator, standard])
+	for kind in WorldMap.KINDS:
+		for tier in DifficultyTier.ORDER:
+			var world_thresholds := MissionMedals.world_thresholds(kind, tier)
+			if world_thresholds.is_empty() or int(world_thresholds[MissionMedals.GOLD]) <= int(world_thresholds[MissionMedals.SILVER]):
+				failures.append("%s at %s has no gold above silver: %s" % [kind, tier, world_thresholds])
+	# The best medal is the best score's: no storage of its own, and it is per tier.
+	var profile = load("res://Scripts/Core/game_settings.gd").new()
+	profile.settings_path = "user://medal_validation.cfg"
+	profile.cleared_missions = PackedStringArray(["first_light"])
+	var gold := int(MissionMedals.operation_thresholds("first_light", DifficultyTier.STANDARD)[MissionMedals.GOLD])
+	profile.record_score("first_light", gold - 1)
+	var entry: Dictionary = MissionCatalog.operation_entries(profile)[0]
+	if entry.get("medal", "") != MissionMedals.SILVER or int(entry.get("best_score", 0)) != gold - 1:
+		failures.append("First Light just under gold shows %s at %s" % [entry.get("medal", ""), entry.get("best_score", 0)])
+	profile.record_score("first_light", gold)
+	if MissionCatalog.operation_entries(profile)[0].get("medal", "") != MissionMedals.GOLD:
+		failures.append("A gold score did not make First Light's medal gold")
+	profile.difficulty_tier = DifficultyTier.OPERATOR
+	if MissionCatalog.operation_entries(profile)[0].get("medal", "") != "":
+		failures.append("A Standard medal shows at Operator")
+	profile.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://medal_validation.cfg"))
+
+## Results and cards with the workout on them: the stats, the medals, NEW BEST SCORE only when
+## the score beats a stored best, and every panel inside its 620 px in every state.
+func _validate_workout_results() -> void:
+	var left := _wrap_panel(Vector2(VRWrapPanel.SIDE_PIXELS))
+	var center := _wrap_panel(Vector2(VRWrapPanel.CENTER_PIXELS))
+	var right := _wrap_panel(Vector2(VRWrapPanel.SIDE_PIXELS))
+	await process_frame
+	# Four-digit counts and a twenty-minute round: wider than any real Breach Night round.
+	var stats := SessionStats.new()
+	stats.punches = 1186
+	stats.rejected = 120
+	stats.wrong_hand = 44
+	stats.by_variant = {"yellow": 134, "blue": 131, "green": 118, "pink": 115}
+	stats.by_kind = {"two_hand_block": 118, "dodge": 115}
+	stats.crits = 127
+	stats.misses = 104
+	stats.longest_chain = 141
+	stats.rifts_sealed = 16
+	stats.active_seconds = 1252.0
+	var profile = load("res://Scripts/Core/game_settings.gd").new()
+	profile.cleared_missions = PackedStringArray(["first_light", "widen_the_ring", "chens_gambit"])
+	profile.best_times = {"chens_gambit": 252.0}
+	profile.best_scores = {"chens_gambit": 31400}
+	var entries := MissionCatalog.operation_entries(profile)
+	var gold := int(MissionMedals.operation_thresholds("chens_gambit", DifficultyTier.STANDARD)[MissionMedals.GOLD])
+	var report := {
+		"outcome": &"victory", "score": gold + 100, "debrief": "Chen: It knows your resonance now. This was the opening move. Not the end of the war.",
+		"seconds": 252.4, "previous_best": 280.0, "best_seconds": 252.4, "tier": DifficultyTier.FULL_RESONANCE,
+		"mission": entries[2], "next": entries[3], "sealed_before": 2, "entries": entries, "offer_training": false,
+		"stats": stats.to_report(), "medal": MissionMedals.GOLD, "previous_best_score": gold - 400, "best_score": gold + 100, "best_medal": MissionMedals.GOLD,
+	}
+	left.show_city_report(report)
+	center.show_results_map(report)
+	right.show_results_actions(report)
+	for _frame in 2:
+		await process_frame
+	for text in ["1186", "127", "141", "20:52", "~%d" % roundi(stats.calories()), "KCAL (EST.)", "16"]:
+		if not _has_label(left, text):
+			failures.append("Results do not show the session stat %s" % text)
+	if not _has_label(left, "GOLD 134  •  BLUE 131  •  BLOCKS 118\nDODGES 115  •  MISSED 104  •  WRONG HAND 44"):
+		failures.append("Results do not show the resolves by phantom, the misses, and the wrong hands")
+	if _count_labels([left, center, right], "NEW BEST SCORE") != 1 or _find_label(center, "NEW BEST SCORE") == null:
+		failures.append("A new best score is not called out exactly once, over the map")
+	if not _has_label(left, CityMap.grouped(gold + 100)) or not _has_label(left, "GOLD"):
+		failures.append("Results do not show the best score and its medal")
+	_check_fits(left, "results with stats")
+	_check_fits(center, "results header with two new bests")
+	_check_fits(right, "results actions with stats")
+	# A score under the stored best is not a new best; the round's medal names itself instead.
+	report["score"] = gold - 500
+	report["medal"] = MissionMedals.SILVER
+	report["best_score"] = gold - 400
+	report["best_medal"] = MissionMedals.SILVER
+	center.show_results_map(report)
+	await process_frame
+	if _has_label(center, "NEW BEST SCORE") or not _has_label(center, "SILVER  •  SCORE"):
+		failures.append("A score under the best was called a new best, or its medal was not named")
+	# The first clear has nothing to beat, as with the time.
+	report["previous_best_score"] = 0
+	center.show_results_map(report)
+	await process_frame
+	if _has_label(center, "NEW BEST SCORE"):
+		failures.append("A first clear was called a new best score")
+	# Defeat, with and without a best; victory with no best yet.
+	for best in [true, false]:
+		var defeat := report.duplicate()
+		defeat["outcome"] = &"defeat"
+		defeat["next"] = {}
+		defeat["offer_training"] = true
+		defeat["medal"] = ""
+		defeat["best_seconds"] = 252.0 if best else 0.0
+		defeat["best_score"] = 31400 if best else 0
+		defeat["best_medal"] = MissionMedals.BRONZE if best else ""
+		left.show_city_report(defeat)
+		center.show_results_map(defeat)
+		right.show_results_actions(defeat)
+		await process_frame
+		if _has_label(center, "BRONZE  •  SCORE") or _has_label(center, "NEW BEST SCORE"):
+			failures.append("A defeat earned a medal or a new best score")
+		_check_fits(left, "defeat results with stats%s" % (" and a best" if best else ""))
+		_check_fits(center, "defeat results header")
+		_check_fits(right, "defeat results actions")
+	var fresh := report.duplicate()
+	fresh["best_seconds"] = 0.0
+	fresh["best_score"] = 0
+	fresh["best_medal"] = ""
+	left.show_city_report(fresh)
+	await process_frame
+	_check_fits(left, "results with stats and no best")
+	# The site card: best score and medal beside YOUR BEST, at every tier, and a new recruit's.
+	profile.best_times = {"first_light": 94.0}
+	profile.best_scores = {"first_light": int(MissionMedals.operation_thresholds("first_light", DifficultyTier.STANDARD)[MissionMedals.GOLD])}
+	entries = MissionCatalog.operation_entries(profile)
+	for tier in DifficultyTier.ORDER:
+		right.show_site_detail(entries[0], tier, false)
+		await process_frame
+		_check_fits(right, "site card with a medal at %s" % tier)
+	right.show_site_detail(entries[0], DifficultyTier.STANDARD, false)
+	await process_frame
+	if not _has_label(right, "BEST SCORE %s" % CityMap.grouped(int(entries[0]["best_score"]))) or not _has_label(right, "GOLD"):
+		failures.append("The site card does not show the best score and medal")
+	right.show_site_detail(MissionCatalog.operation_entries(null)[0], DifficultyTier.STANDARD, true)
+	await process_frame
+	if _has_label(right, "GOLD"):
+		failures.append("A new recruit's site card shows a medal")
+	_check_fits(right, "new recruit's site card")
+	# The city map: a sealed site carries its best score beside its best time.
+	center.show_city_map(entries, "first_light")
+	await process_frame
+	if not _has_label(center, "BEST 1:34  •  %s" % CityMap.grouped(int(entries[0]["best_score"]))):
+		failures.append("A sealed site does not show its best score beside its best time")
+	# World results: every district name and kind, every way a round can end, every tier.
+	var world_profile = load("res://Scripts/Core/game_settings.gd").new()
+	var city_entry: Dictionary = WorldMap.city_entry(world_profile, "tokyo")
+	var section := WorldMap.section("tokyo", 0)
+	var endings := [
+		{"outcome": &"victory", "moved": true, "complete": false, "after": 25},
+		{"outcome": &"victory", "moved": true, "complete": true, "after": 29},
+		{"outcome": &"victory", "moved": false, "complete": false, "after": 25},
+		{"outcome": &"defeat", "moved": false, "complete": false, "after": 25},
+	]
+	for kind in WorldMap.KINDS:
+		for tier in DifficultyTier.ORDER:
+			for ending in endings:
+				var victory: bool = ending["outcome"] == &"victory"
+				for district in WorldMap.DISTRICT_NAMES:
+					var world_report := {
+						"outcome": ending["outcome"], "score": 31400, "debrief": "Chen: %s is shut. Pick the next district when you are ready." % district,
+						"seconds": 287.0 if victory else 0.0, "previous_best": 300.0, "best_seconds": 287.0, "tier": tier,
+						"world": {
+							"entry": city_entry, "section": section, "sealed_before": [], "sealed_after": ["n0"] if ending["moved"] else [],
+							"node": {"id": "n0", "name": district, "kind": kind}, "kind_label": WorldMap.kind_label(kind),
+							"moved": ending["moved"], "operation_complete": ending["complete"], "liberation_before": 25, "liberation_after": ending["after"],
+						},
+						"city": {}, "picked": false, "offer_training": not victory,
+						"stats": stats.to_report(), "medal": MissionMedals.GOLD if victory else "", "previous_best_score": 30000,
+						"best_score": 31400, "best_medal": MissionMedals.GOLD,
+					}
+					left.show_world_report(world_report)
+					await process_frame
+					_check_fits(left, "world report (%s, %s, %s, %s)" % [district, kind, tier, ending])
+				center.show_world_results_map({
+					"outcome": ending["outcome"], "score": 31400, "seconds": 287.0, "previous_best": 300.0, "tier": tier,
+					"previous_best_score": 30000, "medal": MissionMedals.SILVER if victory else "", "city": {},
+					"world": {"section": section, "sealed_after": [], "node": {}, "moved": ending["moved"], "operation_complete": ending["complete"]},
+				})
+				await process_frame
+				_check_fits(center, "world results header (%s, %s)" % [tier, ending])
+			# The operations panel at every point of an operation, beside the card.
+			var path: Array = []
+			for step in 3:
+				left.show_operations_status(_city_card(city_entry, section, path, tier))
+				await process_frame
+				_check_fits(left, "operations panel with %d sealed" % path.size())
+				var open := WorldMap.available_nodes(section, path)
+				if not open.is_empty():
+					path.append(open[0])
+			# The district card: the best score and its medal under YOUR BEST.
+			var card := _city_card(city_entry, section, [], tier)
+			card["best_seconds"] = 241.0
+			card["best_score"] = 31400
+			card["medal"] = MissionMedals.medal_for(31400, MissionMedals.world_thresholds(kind, tier))
+			right.show_district_detail(card)
+			await process_frame
+			if not _has_label(right, "31,400") or not _has_label(right, "BEST SCORE"):
+				failures.append("The district card does not show the best score")
+			_check_fits(right, "district card with a medal (%s, %s)" % [kind, tier])
+	world_profile.free()
+	profile.free()
+	for panel in [left, center, right]:
+		panel.get_parent().queue_free()
+	await process_frame
+
+func _count_labels(panels: Array, text: String) -> int:
+	var count := 0
+	for panel in panels:
+		for node in _controls_under(panel):
+			if node is Label and (node as Label).text == text and node.is_visible_in_tree():
+				count += 1
+	return count

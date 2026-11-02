@@ -11,13 +11,23 @@ signal round_finished(outcome: StringName, score: int)
 ## A mission was deployed and its countdown began. `mission` is the copy at its difficulty.
 signal countdown_started(mission: Dictionary)
 
+const COMBO_TIMEOUT := 4.0
+const MAXIMUM_MULTIPLIER := 3.0
+## What each resolve adds to the multiplier: every resolve, and more for a lure crit or a strike on
+## the lunge. MissionMedals runs its reference round on the same numbers.
+const CHAIN_GAIN := 0.15
+const CRIT_GAIN := 0.2
+const ON_BEAT_GAIN := 0.1
+
 @export var countdown_seconds: int = 3
-@export var combo_timeout: float = 4.0
-@export var maximum_multiplier: float = 3.0
+@export var combo_timeout: float = COMBO_TIMEOUT
+@export var maximum_multiplier: float = MAXIMUM_MULTIPLIER
 
 var score: int = 0
 var sweet_streak: int = 0
 var multiplier: float = 1.0
+## What this round asked of the body: punches, resolves, the chain, active time. Results read it.
+var stats := SessionStats.new()
 ## Seconds the round has been live. Counts up from zero, holds while paused, never ends the round.
 var elapsed_seconds: float = 0.0
 var _last_emitted_second: int = -1
@@ -70,6 +80,7 @@ func abandon_round() -> void:
 	sweet_streak = 0
 	multiplier = 1.0
 	_combo_remaining = 0.0
+	stats.reset()
 	if _director:
 		_director.cleanup_round()
 	if _life_force:
@@ -89,6 +100,7 @@ func begin_round(mission: Dictionary = {}, tier_id: String = DifficultyTier.STAN
 		return
 	_mission = DifficultyTier.apply_mission(mission, tier_id) if not mission.is_empty() else mission
 	elapsed_seconds = 0.0
+	stats.reset()
 	# A first deploy from the main menu never passes through abandon_round, so announce the fresh round here too.
 	score = 0
 	score_changed.emit(score, 0, &"reset")
@@ -166,6 +178,7 @@ func _process(delta: float) -> void:
 	if not _round_active:
 		return
 	elapsed_seconds += delta
+	stats.active_seconds = elapsed_seconds
 	_emit_time_if_changed()
 	if _combo_remaining > 0.0:
 		_combo_remaining -= delta
@@ -178,22 +191,30 @@ func _on_phantom_resolved(result: Dictionary) -> void:
 	var sweet: bool = result.get("sweet_spot", false)
 	var on_beat: bool = result.get("on_beat", false)
 	sweet_streak += 1
-	var gain := 0.15
+	var gain := CHAIN_GAIN
 	if sweet:
-		gain += 0.2
+		gain += CRIT_GAIN
 	if on_beat:
-		gain += 0.1
+		gain += ON_BEAT_GAIN
 	multiplier = minf(multiplier + gain, maximum_multiplier)
 	_combo_remaining = combo_timeout
 	var base_points: int = result.get("base_score", 0)
 	var awarded := int(round(base_points * multiplier))
 	score += awarded
+	stats.record_resolve(result)
+	stats.record_chain(sweet_streak)
 	score_changed.emit(score, awarded, result.get("resolution_kind", &"strike"))
 	combo_changed.emit(sweet_streak, multiplier)
+
+## A glove delivered a strike to a phantom, landed or rejected (CombatHandController).
+func record_strike(result: Dictionary) -> void:
+	if _round_active:
+		stats.record_strike(result)
 
 func _on_player_damaged(amount: float) -> void:
 	if not _round_active:
 		return
+	stats.record_miss()
 	_reset_combo()
 	_life_force.apply_damage(amount)
 
@@ -215,6 +236,8 @@ func _on_rift_spawned(_rift_id: int, _rift: Node3D) -> void:
 	_emit_pressure()
 
 func _on_rift_closed(_rift_id: int, closed: int, total: int) -> void:
+	if _round_active:
+		stats.record_seal()
 	rift_progress_changed.emit(closed, total)
 	_emit_status()
 	if closed >= total:
