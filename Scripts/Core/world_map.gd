@@ -25,16 +25,17 @@ const KIND_HOLD := "hold"
 const KIND_MAW := "maw"
 const KINDS: Array[String] = [KIND_SINGLE, KIND_DUAL, KIND_HOLD, KIND_MAW]
 
-## The ground each tear has taken, in longitude and latitude. Authored until a server moves it.
+## The ground each tear has taken, in longitude and latitude, as a fresh profile finds it: the
+## seeded operations are already in these shapes. Nothing pushes them outward until the war has
+## a heartbeat; the player's operations pull them back toward their tear (see zone_polygons).
 const ZONES := {
 	"jakarta": [[58, 36], [66, 30], [80, 26], [96, 27], [118, 28], [134, 31], [150, 34], [166, 10], [160, -42], [112, -46], [90, -40], [72, -30], [60, -8], [55, 10]],
 	"chicago": [[-101, 50], [-90, 50], [-82, 46], [-78, 41], [-83, 33.5], [-92, 31.5], [-96, 36], [-100, 44]],
 }
-## Where each front is pushing: [lon, lat, degrees], drawn as arrows.
-const ARROWS := [
-	[54, 22, -100], [80, 27, -10], [126, 31, -15], [160, 10, 70], [168, -20, 90],
-	[-106, 40, -110], [-95, 51, -10], [-78, 43, 60], [-88, 29, 170], [-102, 34, -150],
-]
+## How far a front recedes, as a fraction of its authored shape, once every one of its cities is
+## liberated. Each completed operation inside a front shrinks it toward its tear by its share;
+## the tear's own city is the last thing standing, and liberating it ends that front.
+const RECESSION_MAX := 0.88
 
 ## ops is the resistance: operations to liberate. opsDone seeds a fresh profile's war so the map
 ## is not empty on day one; the player's own operations add to it.
@@ -108,8 +109,8 @@ static func project(lon: float, lat: float) -> Vector2:
 		(WorldCoastline.LAT_TOP - lat) / (WorldCoastline.LAT_TOP - WorldCoastline.LAT_BOTTOM) * WorldCoastline.HEIGHT
 	)
 
-## The fronts as projected polygons, keyed by the tear that opened them.
-static func zone_polygons() -> Dictionary:
+## The authored fronts as projected polygons, keyed by the tear that opened them.
+static func base_zone_polygons() -> Dictionary:
 	var out := {}
 	for key in ZONES:
 		var polygon := PackedVector2Array()
@@ -118,11 +119,103 @@ static func zone_polygons() -> Dictionary:
 		out[key] = polygon
 	return out
 
-static func arrows() -> Array[Dictionary]:
-	var out: Array[Dictionary] = []
-	for arrow in ARROWS:
-		out.append({"point": project(float(arrow[0]), float(arrow[1])), "degrees": float(arrow[2])})
+## The fronts as the player's war has left them: each authored shape scaled toward its tear by
+## that front's recession. A front whose tear has been liberated is gone. With no settings, the
+## fronts are the authored shapes.
+static func zone_polygons(settings: Object = null) -> Dictionary:
+	return _zones_for(recession(settings), settings)
+
+static func _zones_for(pulled: Dictionary, settings: Object) -> Dictionary:
+	var out := {}
+	var base := base_zone_polygons()
+	for key in base:
+		if _origin_liberated(settings, key):
+			continue
+		var scale := 1.0 - RECESSION_MAX * float(pulled.get(key, 0.0))
+		var origin := _raw_city(key)
+		var center := project(float(origin.get("lon", 0.0)), float(origin.get("lat", 0.0)))
+		var polygon := PackedVector2Array()
+		for point in base[key]:
+			polygon.append(center + (point - center) * scale)
+		out[key] = polygon
 	return out
+
+## The tear a city's fight counts toward: the nearest authored front. "" for a city with no
+## operations to fight.
+static func zone_of(city_id: String) -> String:
+	var raw := _raw_city(city_id)
+	if raw.is_empty() or int(raw.get("ops", 0)) <= 0:
+		return ""
+	var point := project(float(raw["lon"]), float(raw["lat"]))
+	var best_key := ""
+	var best := INF
+	var base := base_zone_polygons()
+	for key in base:
+		var polygon: PackedVector2Array = base[key]
+		var distance := 0.0 if Geometry2D.is_point_in_polygon(point, polygon) else distance_to_polygon(point, polygon)
+		if distance < best:
+			best = distance
+			best_key = key
+	return best_key
+
+## Each front's push-back, 0 to 1: the operations the player has completed in its cities, over
+## the operations those cities still took when the profile began. The tear's own city does not
+## count; it opens when the rest are done. A city the receding front has left safe counts as
+## done too, since there is nothing left to fight there, so the push-back settles at a fixed
+## point: more recession leaves more cities safe, never fewer.
+static func recession(settings: Object) -> Dictionary:
+	var remaining := {}
+	var fights: Array[Dictionary] = []
+	for key in ZONES:
+		remaining[key] = 0
+	for raw in CITIES:
+		if raw.has("origin") or int(raw.get("ops", 0)) <= 0:
+			continue
+		var key := zone_of(String(raw["id"]))
+		if key == "":
+			continue
+		var left := int(raw["ops"]) - int(raw.get("seed_ops", 0))
+		var player_ops := clampi(int(progress_for(settings, String(raw["id"]))["ops_done"]) - int(raw.get("seed_ops", 0)), 0, left)
+		remaining[key] += left
+		fights.append({"key": key, "left": left, "done": player_ops, "point": project(float(raw["lon"]), float(raw["lat"]))})
+	var out := {}
+	for key in ZONES:
+		out[key] = 0.0
+	for _pass in 8:
+		var zones := _zones_for(out, settings)
+		var done := {}
+		for key in ZONES:
+			done[key] = 0
+		for fight in fights:
+			var counted: int = fight["done"]
+			if counted < int(fight["left"]) and not zones.has(fight["key"]):
+				counted = fight["left"]
+			elif counted < int(fight["left"]) and state_in(fight["point"], zones)["state"] == STATE_SAFE:
+				counted = fight["left"]
+			done[fight["key"]] += counted
+		var changed := false
+		for key in ZONES:
+			var next := clampf(float(done[key]) / maxf(float(remaining[key]), 1.0), 0.0, 1.0)
+			if not is_equal_approx(next, float(out[key])):
+				changed = true
+			out[key] = next
+		if not changed:
+			break
+	return out
+
+static func _raw_city(city_id: String) -> Dictionary:
+	for raw in CITIES:
+		if raw.get("id", "") == city_id:
+			return raw
+	return {}
+
+static func _is_liberated(settings: Object, raw: Dictionary) -> bool:
+	var ops := int(raw.get("ops", 0))
+	return ops > 0 and int(progress_for(settings, String(raw.get("id", "")))["ops_done"]) >= ops
+
+static func _origin_liberated(settings: Object, zone_key: String) -> bool:
+	var raw := _raw_city(zone_key)
+	return not raw.is_empty() and _is_liberated(settings, raw)
 
 ## The whole projected map.
 static func world_box() -> Rect2:
@@ -176,9 +269,13 @@ static func distance_to_polygon(point: Vector2, polygon: PackedVector2Array) -> 
 		best = minf(best, point.distance_to(Geometry2D.get_closest_point_to_segment(point, a, b)))
 	return best
 
-## The state a point on the map is in, and its distance to the nearest front.
-static func state_at(point: Vector2) -> Dictionary:
-	var polygons := zone_polygons()
+## The state a point on the map is in, and its distance to the nearest front, as the player's
+## war has left the fronts.
+static func state_at(point: Vector2, settings: Object = null) -> Dictionary:
+	return state_in(point, zone_polygons(settings))
+
+## The same, against the given fronts (zone_polygons).
+static func state_in(point: Vector2, polygons: Dictionary) -> Dictionary:
 	var distance := INF
 	for key in polygons:
 		var polygon: PackedVector2Array = polygons[key]
@@ -246,13 +343,19 @@ static func asks(state: String) -> String:
 
 # --- Cities ---------------------------------------------------------------------------------
 
-## Every city with its projected point, state, distance, and difficulty.
-static func cities() -> Array[Dictionary]:
+## Every city with its projected point, state, distance, and difficulty, against the fronts as
+## the player's war has left them. A tear's city is overrun, not consumed, once every other city
+## of its front is liberated: the last fight of that front.
+static func cities(settings: Object = null) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
+	var pulled := recession(settings)
+	var zones := _zones_for(pulled, settings)
 	for raw in CITIES:
 		var city: Dictionary = (raw as Dictionary).duplicate()
 		var point := project(float(city["lon"]), float(city["lat"]))
-		var where := state_at(point)
+		var where := state_in(point, zones)
+		if raw.has("origin") and where["state"] == STATE_CONSUMED and float(pulled.get(raw["id"], 0.0)) >= 1.0:
+			where = {"state": STATE_OVERRUN, "distance": 0.0}
 		city["point"] = point
 		city["state"] = where["state"]
 		city["distance"] = where["distance"]
@@ -263,8 +366,8 @@ static func cities() -> Array[Dictionary]:
 		out.append(city)
 	return out
 
-static func city(city_id: String) -> Dictionary:
-	for candidate in cities():
+static func city(city_id: String, settings: Object = null) -> Dictionary:
+	for candidate in cities(settings):
 		if candidate.get("id", "") == city_id:
 			return candidate
 	return {}
@@ -276,16 +379,24 @@ static func home_city_id() -> String:
 	return String(CITIES[0]["id"])
 
 ## Cities with the player's progress folded in: ops_done, liberation, section index, sealed nodes.
+## A liberated city (every operation done) has no missions, whatever the front near it is doing.
 static func city_entries(settings: Object) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
-	for entry in cities():
+	for entry in cities(settings):
 		var progress := progress_for(settings, String(entry["id"]))
+		var ops := int(entry.get("ops", 0))
+		var liberated := ops > 0 and int(progress["ops_done"]) >= ops
 		entry["ops_done"] = progress["ops_done"]
 		entry["section"] = progress["section"]
 		entry["sealed"] = progress["sealed"]
-		entry["liberation"] = liberation(entry, int(progress["ops_done"]))
-		entry["resistance"] = resistance_label(int(entry.get("ops", 0)))
-		entry["liberated"] = entry["liberation"] >= 100 and entry["playable"]
+		entry["liberation"] = 100 if liberated else liberation(entry, int(progress["ops_done"]))
+		entry["resistance"] = resistance_label(ops)
+		entry["liberated"] = liberated
+		if liberated:
+			entry["playable"] = false
+			entry["difficulty"] = ""
+			entry["state_label"] = "LIBERATED"
+			entry["difficulty_label"] = "LIBERATED"
 		out.append(entry)
 	return out
 

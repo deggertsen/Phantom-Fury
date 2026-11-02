@@ -18,7 +18,6 @@ func _run_validation() -> void:
 	await _validate_rift_stragglers()
 	await _validate_elapsed_timer()
 	await _validate_menu_surface()
-	await _validate_city_menu()
 	_validate_front_lines()
 	await _validate_breach_sites()
 	await _validate_results_menu()
@@ -36,6 +35,7 @@ func _run_validation() -> void:
 	_validate_world_regions()
 	_validate_world_kinds()
 	await _validate_world_menu()
+	await _validate_world_first()
 	_validate_district_sites()
 	await _validate_hold_the_line()
 	await _validate_punch_power()
@@ -174,7 +174,7 @@ func _validate_menu_surface() -> void:
 	var complete_actions := _button_actions(menu)
 	if complete_actions != ["training_deploy", "training_replay", "training_menu"]:
 		failures.append("Training Complete offers %s" % [complete_actions])
-	var complete_deploy := _find_button(menu, "DEPLOY")
+	var complete_deploy := _find_button(menu, "TO THE FRONT")
 	var activated := [false]
 	menu.action_requested.connect(func(action: StringName) -> void:
 		activated[0] = action == &"training_deploy"
@@ -687,135 +687,6 @@ func _validate_green_arrival() -> void:
 	head.queue_free()
 	await process_frame
 
-## The city map and results are three wrap panels, each checked laid flat at its headset size.
-func _validate_city_menu() -> void:
-	var left := _wrap_panel(Vector2(VRWrapPanel.SIDE_PIXELS))
-	var center := _wrap_panel(Vector2(VRWrapPanel.CENTER_PIXELS))
-	var right := _wrap_panel(Vector2(VRWrapPanel.SIDE_PIXELS))
-	await process_frame
-	var profile = load("res://Scripts/Core/game_settings.gd").new()
-	profile.cleared_missions = PackedStringArray(["first_light", "widen_the_ring"])
-	profile.best_times = {"first_light": 94.0, "widen_the_ring": 342.0}
-	var entries := MissionCatalog.operation_entries(profile)
-	left.show_city_status(entries, false)
-	center.show_city_map(entries, "chens_gambit")
-	right.show_site_detail(entries[2], DifficultyTier.STANDARD, false)
-	for _frame in 3:
-		await process_frame
-	if _button_actions(left) != ["training", "world", "settings"]:
-		failures.append("The city's left panel offers %s" % [_button_actions(left)])
-	elif bool(_find_button(left, "TRAINING").get_meta(&"primary", false)):
-		failures.append("Training leads the city map for a trained Striker")
-	if not _has_label(left, "33%"):
-		failures.append("The city does not show how much of it is reclaimed")
-	var sites := {}
-	for button in _buttons_under(center):
-		sites[String(button.get_meta(&"menu_action", &""))] = button
-	for entry in entries:
-		var site: Button = sites.get("site_%s" % entry.get("id", ""))
-		if site == null:
-			failures.append("The city map has no site for %s" % entry.get("id", ""))
-		elif site.disabled == bool(entry.get("unlocked", false)):
-			failures.append("Site %s is %s" % [entry.get("id", ""), "locked" if site.disabled else "open"])
-	var picked := [&""]
-	center.action_requested.connect(func(action: StringName) -> void: picked[0] = action)
-	var gambit: Button = sites.get("site_chens_gambit")
-	if gambit == null or not center.activate_at_viewport_point(gambit.get_global_rect().get_center()) or picked[0] != &"site_chens_gambit":
-		failures.append("Pointing at a site did not pick it")
-	var deploy := _find_button(right, "DEPLOY")
-	var deployed := [false]
-	right.action_requested.connect(func(action: StringName) -> void: deployed[0] = action == &"deploy")
-	if deploy == null or not bool(deploy.get_meta(&"primary", false)) or not "STANDARD" in deploy.text:
-		failures.append("Deploy does not lead the site panel or name the difficulty")
-	elif not right.activate_at_viewport_point(deploy.get_global_rect().get_center()) or not deployed[0]:
-		failures.append("Pointing at Deploy did not activate it")
-	if not _has_label(right, "6 TO 8 MIN"):
-		failures.append("The site panel does not show the expected time")
-	_check_fits(left, "city panel")
-	_check_fits(right, "site panel")
-	right.show_site_detail(entries[1], DifficultyTier.STANDARD, false)
-	await process_frame
-	if not _has_label(right, "6 TO 8 MIN  •  YOUR BEST 5:42"):
-		failures.append("The site panel does not show the best time beside the range")
-	# Every difficulty, the chosen one marked, and Full Resonance says what it asks before Deploy.
-	right.show_site_detail(entries[2], DifficultyTier.FULL_RESONANCE, false)
-	await process_frame
-	var tiers := 0
-	for button in _buttons_under(right):
-		var action := String(button.get_meta(&"menu_action", &""))
-		if action.begins_with("tier_"):
-			tiers += 1
-			if button.text.begins_with("●") != (action == "tier_full_resonance"):
-				failures.append("The site panel marks the wrong difficulty: %s" % button.text)
-	if tiers != 4:
-		failures.append("The site panel offers %d difficulties, not four" % tiers)
-	if not _has_label(right, DifficultyTier.blurb(DifficultyTier.FULL_RESONANCE)):
-		failures.append("Full Resonance does not say what it asks before Deploy")
-	_check_fits(right, "Full Resonance site panel")
-	# A new recruit: training leads, and Deploy still works.
-	var recruit := MissionCatalog.operation_entries(null)
-	left.show_city_status(recruit, true)
-	right.show_site_detail(recruit[0], DifficultyTier.STANDARD, true)
-	for _frame in 2:
-		await process_frame
-	var new_training := _find_button(left, "TRAINING")
-	var new_deploy := _find_button(right, "DEPLOY")
-	if new_training == null or not bool(new_training.get_meta(&"primary", false)) or new_deploy == null or bool(new_deploy.get_meta(&"primary", false)) or new_deploy.disabled:
-		failures.append("A new recruit's city map does not lead with training")
-	elif not "TRAINING RECOMMENDED FIRST" in new_deploy.text:
-		failures.append("Deploy does not recommend training to a new recruit")
-	_check_fits(left, "new recruit's city panel")
-	_check_fits(right, "new recruit's site panel")
-	# Results: the front moves, the time and tier show, and the actions follow the outcome.
-	profile.cleared_missions = PackedStringArray(["first_light", "widen_the_ring", "chens_gambit"])
-	var after := MissionCatalog.operation_entries(profile)
-	var victory := {
-		"outcome": &"victory",
-		"score": 12840,
-		"debrief": "Chen: It knows your resonance now. This was the opening move. Not the end of the war.",
-		"seconds": 252.4,
-		"previous_best": 280.0,
-		"best_seconds": 252.4,
-		"tier": DifficultyTier.FULL_RESONANCE,
-		"mission": after[2],
-		"next": after[3],
-		"sealed_before": 2,
-		"entries": after,
-		"offer_training": false,
-	}
-	left.show_city_report(victory)
-	center.show_results_map(victory)
-	right.show_results_actions(victory)
-	for _frame in 2:
-		await process_frame
-	if not _has_label(left, "THE LINE MOVED") or not _has_label(left, "UP FROM 33%"):
-		failures.append("Results do not show the front moving")
-	if not _has_label(center, "ALL RIFTS SEALED  •  FULL RESONANCE"):
-		failures.append("Results do not name the difficulty")
-	if not _has_label(center, "4:12") or not _has_label(center, "NEW BEST TIME"):
-		failures.append("Victory results do not show the completion time")
-	if _button_actions(right) != ["next_mission", "retry", "results_menu"]:
-		failures.append("Victory results offer %s" % [_button_actions(right)])
-	_check_fits(left, "results city panel")
-	_check_fits(right, "results action panel")
-	var defeat := victory.duplicate()
-	defeat["outcome"] = &"defeat"
-	defeat["next"] = {}
-	defeat["offer_training"] = true
-	left.show_city_report(defeat)
-	right.show_results_actions(defeat)
-	await process_frame
-	if _button_actions(right) != ["retry", "results_training", "results_menu"]:
-		failures.append("Defeat results offer %s" % [_button_actions(right)])
-	elif not bool(_find_button(right, "RETRY").get_meta(&"primary", false)):
-		failures.append("Retry does not lead after a defeat")
-	if _has_label(left, "THE LINE MOVED"):
-		failures.append("A defeat moved the front")
-	profile.free()
-	for panel in [left, center, right]:
-		panel.get_parent().queue_free()
-	await process_frame
-
 ## At every sealed count the sealed sites sit behind the front and the rest in front of it.
 func _validate_front_lines() -> void:
 	var map := CityMap.new()
@@ -1025,28 +896,32 @@ func _validate_results_menu() -> void:
 			await process_frame
 			if screen_shape.disabled:
 				failures.append("Results screen collider stayed disabled")
-	presenter.show_city_map(entries, "chens_gambit", DifficultyTier.STANDARD, false)
+	# The world map is the main menu: Open on the right, a region on the map, both by aim.
+	var home_id := WorldMap.home_city_id()
+	var world_entries := WorldMap.city_entries(null)
+	var world := {"liberation": WorldMap.world_liberation(null), "filter": "all", "home_id": home_id, "priority": {}, "training_first": false, "assist": false, "region": "", "zoom_from": "", "zones": WorldMap.zone_polygons(null)}
+	presenter.show_world_map(world, world_entries, home_id)
 	for _frame in 4:
 		await process_frame
-	var deploy := _find_button(right_screen, "DEPLOY")
+	var open := _find_button(right_screen, "OPEN")
 	activated[0] = &""
-	if deploy == null:
-		failures.append("The city map has no Deploy on the right panel")
+	if open == null:
+		failures.append("The world map has no Open on the right panel")
 	else:
-		var deploy_point := _screen_point(right_screen, deploy.get_global_rect().get_center())
-		if not presenter.activate_from_aim(camera.global_position, deploy_point - camera.global_position) or activated[0] != &"deploy":
-			failures.append("Aiming at Deploy from the head did not activate it")
-	var gambit: Button = null
+		var open_point := _screen_point(right_screen, open.get_global_rect().get_center())
+		if not presenter.activate_from_aim(camera.global_position, open_point - camera.global_position) or activated[0] != &"world_open":
+			failures.append("Aiming at Open from the head did not activate it")
+	var region_button: Button = null
 	for button in _buttons_under(center_screen):
-		if button.get_meta(&"menu_action", &"") == &"site_chens_gambit":
-			gambit = button
+		if button.get_meta(&"menu_action", &"") == &"world_region_north_america":
+			region_button = button
 	activated[0] = &""
-	if gambit == null:
-		failures.append("The city map has no Chen's Gambit site")
+	if region_button == null:
+		failures.append("The world map has no North America region")
 	else:
-		var site_point := _screen_point(center_screen, gambit.get_global_rect().get_center())
-		if not presenter.activate_from_aim(camera.global_position, site_point - camera.global_position) or activated[0] != &"site_chens_gambit":
-			failures.append("Aiming at a site from the head did not pick it")
+		var region_point := _screen_point(center_screen, region_button.get_global_rect().get_center())
+		if not presenter.activate_from_aim(camera.global_position, region_point - camera.global_position) or activated[0] != &"world_region_north_america":
+			failures.append("Aiming at a region from the head did not pick it")
 	presenter.show_pause()
 	for _frame in 2:
 		await process_frame
@@ -1056,7 +931,7 @@ func _validate_results_menu() -> void:
 	var placed := presenter.global_transform
 	camera.global_position = Vector3(0.6, 1.6, 0.4)
 	camera.rotation.y = deg_to_rad(70.0)
-	presenter.show_city_map(entries, "first_light", DifficultyTier.STANDARD, false)
+	presenter.show_world_map(world, world_entries, home_id)
 	presenter.show_results({"outcome": &"defeat", "score": 10, "tier": DifficultyTier.STANDARD, "mission": entries[0], "entries": entries})
 	presenter.show_settings("75%", "50%", "100%", false, false)
 	for _frame in 2:
@@ -1181,8 +1056,6 @@ func _validate_mission_catalog() -> void:
 			failures.append("%s labels, barks, or seal lines do not match its %d rifts" % [mission.get("id", ""), rift_count])
 	if MissionCatalog.expected_minutes_text({"expected_minutes": [6, 8]}) != "6 TO 8 MIN":
 		failures.append("Expected time range does not read as 6 TO 8 MIN")
-	if MissionCatalog.deploy_detail(null) != "NEXT • OP-01 FIRST LIGHT • %s • STANDARD" % MissionCatalog.expected_minutes_text(MissionCatalog.get_mission("first_light")):
-		failures.append("Deploy button does not show the next mission's expected time and tier: %s" % MissionCatalog.deploy_detail(null))
 	var none := PackedStringArray()
 	if not MissionCatalog.is_unlocked_with_clears("first_light", none):
 		failures.append("First Light should be available immediately")
@@ -1388,8 +1261,6 @@ func _validate_difficulty_tiers() -> void:
 	var entries := MissionCatalog.operation_entries(reloaded)
 	if not is_equal_approx(float(entries[0].get("best_seconds", 0.0)), 200.0) or entries[0].get("tier", "") != DifficultyTier.FULL_RESONANCE:
 		failures.append("Operations does not show the chosen tier's best time")
-	if not MissionCatalog.deploy_detail(reloaded).ends_with("• FULL RESONANCE"):
-		failures.append("Deploy does not show the chosen tier: %s" % MissionCatalog.deploy_detail(reloaded))
 	var maw_entry: Dictionary = entries[entries.size() - 1]
 	if maw_entry.get("expected_minutes", []) != [4, 7]:
 		failures.append("The Full Resonance Maw card does not cover the boss: %s" % [maw_entry.get("expected_minutes", [])])
@@ -1399,19 +1270,6 @@ func _validate_difficulty_tiers() -> void:
 	levels.free()
 	reloaded.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	# The site panel marks the chosen difficulty and says what it asks. (More in _validate_city_menu.)
-	var site_panel := _wrap_panel(Vector2(VRWrapPanel.SIDE_PIXELS))
-	await process_frame
-	site_panel.show_site_detail(MissionCatalog.operation_entries(null)[0], DifficultyTier.OPERATOR)
-	await process_frame
-	for button in _buttons_under(site_panel):
-		var action := String(button.get_meta(&"menu_action", &""))
-		if action.begins_with("tier_") and button.text.begins_with("●") != (action == "tier_operator"):
-			failures.append("The site panel marks the wrong difficulty: %s" % button.text)
-	if not _has_label(site_panel, DifficultyTier.blurb(DifficultyTier.OPERATOR)):
-		failures.append("The site panel does not say what the chosen difficulty asks")
-	site_panel.get_parent().queue_free()
-	await process_frame
 	await _validate_boss_only_at_full_resonance()
 
 ## The campaign Maw, forced to break, at every tier: only Full Resonance arms the rift and plays
@@ -2823,8 +2681,8 @@ func _validate_world_menu() -> void:
 	var open := _find_button(right, "OPEN")
 	if open == null or open.disabled or not bool(open.get_meta(&"primary", false)):
 		failures.append("Open does not lead the home city's card")
-	if _find_button(right, "BREACH NIGHT") == null:
-		failures.append("The home city does not offer Breach Night")
+	if _find_button(right, "BREACH NIGHT") != null:
+		failures.append("The home city still offers Breach Night as a separate front door")
 	_check_fits(left, "world panel")
 	_check_fits(right, "city card")
 	_check_no_boss([left, center, right], "The world map")
@@ -3171,6 +3029,121 @@ func _validate_world_results_flow() -> void:
 	await process_frame
 	profile.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://world_flow_validation.cfg"))
+
+## The world is the game: it boots to the world map, training sends the recruit into the home
+## city, Breach Night is no longer a door, and the fronts recede as the player's operations
+## liberate the cities inside them, until the tear itself is the last fight.
+func _validate_world_first() -> void:
+	var home_id := WorldMap.home_city_id()
+	# Boot and training.
+	var flow = load("res://Scripts/Core/game_flow_controller.gd").new()
+	var fresh = load("res://Scripts/Core/game_settings.gd").new()
+	fresh.settings_path = "user://world_first_validation.cfg"
+	fresh.clear_mission_progress()
+	flow._settings = fresh
+	flow._show_world_map()
+	if flow._state != &"world":
+		failures.append("The game does not boot to the world map (state %s)" % flow._state)
+	if flow._action_belongs_to_state(&"campaign") or flow._action_belongs_to_state(&"world"):
+		failures.append("The world map still accepts Breach Night actions")
+	flow._state = &"tutorial"
+	if not flow._action_belongs_to_state(&"training_deploy"):
+		failures.append("Training Complete lost its deploy action")
+	flow._deploy_from_training()
+	if flow._state != &"city" or flow._selected_city_id != home_id or flow._world_region_id != WorldMap.region_of(home_id):
+		failures.append("To the Front does not open the home city's section with its region remembered (%s, %s, %s)" % [flow._state, flow._selected_city_id, flow._world_region_id])
+	if not WorldMap.city(home_id)["name"].to_upper() in flow._training_deploy_detail():
+		failures.append("The Training Complete line does not name the home city: %s" % flow._training_deploy_detail())
+	if not flow._world_status(WorldMap.city_entries(fresh)).has("zones"):
+		failures.append("The world status does not carry the fronts")
+	flow.free()
+	# A fresh profile sees the authored fronts exactly.
+	var base := WorldMap.base_zone_polygons()
+	var fresh_zones := WorldMap.zone_polygons(fresh)
+	for key in base:
+		if not fresh_zones.has(key) or fresh_zones[key] != base[key]:
+			failures.append("A fresh profile does not see the authored %s front" % key)
+	# Liberating Tokyo pulls the Jakarta front back and marks Tokyo liberated with no missions.
+	var tokyo := WorldMap._raw_city("tokyo")
+	fresh.store_world_progress("tokyo", {"ops_done": int(tokyo["ops"]) - int(tokyo["seed_ops"]), "section": 3, "sealed": []})
+	var pulled := WorldMap.recession(fresh)
+	if float(pulled.get("jakarta", 0.0)) <= 0.0 or float(pulled.get("chicago", 0.0)) != 0.0:
+		failures.append("Tokyo's liberation did not pull the Jakarta front back alone: %s" % pulled)
+	var zones := WorldMap.zone_polygons(fresh)
+	if _polygon_area(zones["jakarta"]) >= _polygon_area(base["jakarta"]) or zones["chicago"] != base["chicago"]:
+		failures.append("The Jakarta front did not shrink toward its tear")
+	var tokyo_entry := WorldMap.city_entry(fresh, "tokyo")
+	if not tokyo_entry.get("liberated", false) or tokyo_entry.get("playable", true) or tokyo_entry.get("state_label", "") != "LIBERATED" or int(tokyo_entry.get("liberation", 0)) != 100:
+		failures.append("A city with every operation done is not shown liberated: %s" % tokyo_entry)
+	if WorldMap.world_liberation(fresh) <= WorldMap.world_liberation(null):
+		failures.append("Liberating a city did not raise world liberation")
+	# Liberating every reachable city of a front frees ground behind it, and in the end the tear.
+	var consumed_before: Array[String] = []
+	for entry in WorldMap.city_entries(fresh):
+		if entry["state"] == WorldMap.STATE_CONSUMED and WorldMap.zone_of(entry["id"]) == "jakarta" and not entry.has("origin"):
+			consumed_before.append(entry["id"])
+	var freed := false
+	for round_index in 8:
+		var opened_any := false
+		for entry in WorldMap.city_entries(fresh):
+			if entry.get("playable", false) and not entry.get("liberated", false) and WorldMap.zone_of(entry["id"]) == "jakarta" and not entry.has("origin"):
+				var raw := WorldMap._raw_city(entry["id"])
+				fresh.store_world_progress(entry["id"], {"ops_done": int(raw["ops"]) - int(raw.get("seed_ops", 0)), "section": 1, "sealed": []})
+				opened_any = true
+		for city_id in consumed_before:
+			if WorldMap.city_entry(fresh, city_id)["state"] != WorldMap.STATE_CONSUMED:
+				freed = true
+		if not opened_any:
+			break
+	if not freed:
+		failures.append("Pushing the Jakarta front back never freed a consumed city behind it")
+	var jakarta := WorldMap.city_entry(fresh, "jakarta")
+	if float(WorldMap.recession(fresh).get("jakarta", 0.0)) < 1.0:
+		failures.append("Liberating every Jakarta-front city did not finish its recession: %s" % WorldMap.recession(fresh))
+	elif jakarta["state"] != WorldMap.STATE_OVERRUN or not jakarta.get("playable", false):
+		failures.append("The tear did not open as the last fight: %s" % jakarta["state"])
+	var tear := WorldMap._raw_city("jakarta")
+	fresh.store_world_progress("jakarta", {"ops_done": int(tear["ops"]), "section": 1, "sealed": []})
+	if WorldMap.zone_polygons(fresh).has("jakarta"):
+		failures.append("Liberating the tear did not end its front")
+	if WorldMap.city_entry(fresh, "sydney")["state"] != WorldMap.STATE_SAFE and not WorldMap.city_entry(fresh, "sydney").get("liberated", false):
+		failures.append("With the Jakarta front gone, Sydney is still %s" % WorldMap.city_entry(fresh, "sydney")["state"])
+	fresh.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://world_first_validation.cfg"))
+	# The receded fronts draw and the liberated marker fits.
+	var center := _wrap_panel(Vector2(VRWrapPanel.CENTER_PIXELS))
+	var right := _wrap_panel(Vector2(VRWrapPanel.SIDE_PIXELS))
+	await process_frame
+	var profile = load("res://Scripts/Core/game_settings.gd").new()
+	profile.settings_path = "user://world_first_validation.cfg"
+	profile.clear_mission_progress()
+	profile.store_world_progress("tokyo", {"ops_done": int(tokyo["ops"]) - int(tokyo["seed_ops"]), "section": 3, "sealed": []})
+	var entries := WorldMap.city_entries(profile)
+	var shown := {"liberation": WorldMap.world_liberation(profile), "filter": "all", "home_id": home_id, "priority": {}, "training_first": false, "assist": false, "region": "asia", "zoom_from": "", "zones": WorldMap.zone_polygons(profile)}
+	center.show_world_map(entries, "tokyo", shown)
+	right.show_world_city(WorldMap.city_entry(profile, "tokyo"), shown)
+	for _frame in 3:
+		await process_frame
+	var view := center.world_map_view()
+	if view == null or view._zones.hash() != WorldMap.zone_polygons(profile).hash():
+		failures.append("The world map does not draw the profile's fronts")
+	var liberated_button := _find_button(right, "LIBERATED")
+	if liberated_button == null or not liberated_button.disabled:
+		failures.append("A liberated city's card still offers Open")
+	_check_fits(right, "liberated city card")
+	profile.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://world_first_validation.cfg"))
+	for panel in [center, right]:
+		panel.get_parent().queue_free()
+	await process_frame
+
+func _polygon_area(polygon: PackedVector2Array) -> float:
+	var area := 0.0
+	for index in polygon.size():
+		var a := polygon[index]
+		var b := polygon[(index + 1) % polygon.size()]
+		area += a.x * b.y - b.x * a.y
+	return absf(area) * 0.5
 
 ## Every district name is a site id BreachSites knows, so no district silently plays at the Dead City.
 func _validate_district_sites() -> void:
