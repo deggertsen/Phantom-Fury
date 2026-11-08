@@ -59,6 +59,7 @@ func _ready() -> void:
 	await _hits()
 	await _low_life()
 	await _lineups()
+	await _movers()
 	print("ART CAPTURE COMPLETE: %s" % _out_dir)
 	get_tree().quit()
 
@@ -96,6 +97,21 @@ func _lineups() -> void:
 		for phantom in row:
 			phantom.queue_free()
 		_phantoms.clear()
+
+## The Ray and the Eel mid-run, from three-quarters in front, as the Striker would meet them.
+func _movers() -> void:
+	for id in ["ray", "eel"]:
+		var mover := (load(MissionCatalog.scene_path(id)) as PackedScene).instantiate() as SweepCreature
+		_main.get_node("PhantomContainer").add_child(mover)
+		mover.set_physics_process(false)
+		mover.set_process(false)
+		var at := Vector3(0.0, 1.45 if id == "ray" else 0.12, -2.6)
+		mover._body_position = at
+		mover._heading = Vector3.BACK
+		mover._place_body(0.0)
+		var eye := Vector3(0.35, 1.62, 0.0) if id == "ray" else Vector3(1.3, 1.4, -0.2)
+		await _shot("mover-%s" % id, eye, at)
+		mover.queue_free()
 
 func _spawn(key: String, at: Vector3, id: String = "", form: int = 0) -> void:
 	if id == "":

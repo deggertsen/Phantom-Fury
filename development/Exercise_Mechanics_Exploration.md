@@ -74,6 +74,8 @@ Seventh round, from the hand tracking tests of 2026-10-14 and 2026-10-17 (tests 
 
 39. **Hand tracking alone is out for the fighting; simultaneous hands and controllers is the input at Full Resonance.** It dropped 4 to 10 punches in 20 against a bar of 2, lost the hands at the face and on wide hooks, and lagged visibly ("hand tracking alone is a no go"). The player fights on controllers and lets them hang on their straps for push-ups, where the tracked hands held perfectly. Plan under "Hand tracking" in the boss section.
 
+40. **Phantoms carry the movements outside bosses (2026-11-08).** The rift itself attacking (blades, slams) felt wrong to David, so two species carry the movements in ordinary rifts: the Ray (go under it: a duck at Medium, a squat at Full Resonance) and the Eel (jump it; Full Resonance only). Every Full Resonance mission asks for both. Push-ups stay with the Maw's tentacles, because getting down for a quick push-up in VR is awkward; a push-up phantom (the Flatfish) was rejected. Medium may meet the Maw's lighter form (duck-depth sweeps, the jump pair, and the volley; no slams, which stay Hard's and always end in push-ups) as a sector finale, so bosses are no longer Full Resonance only. See [Difficulty_Matrix.md](Difficulty_Matrix.md).
+
 ---
 
 ## Bosses carry the movements

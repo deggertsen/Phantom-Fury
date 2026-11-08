@@ -122,3 +122,24 @@ Things to feel on this build, from the developer's 2026-10-26 debug-build playth
 Third alpha build. Channel alpha, app 1380039785197018, build ID 1402011769666486, APK sha256 444162b6ed6febc709fa99390b13acc3f035786213505775ecc0f8a51dc83132 (124.2 MB). Notes: the world map is the front door (training, then straight into the war; Breach Night gone from the menus), fronts recede as cities are liberated and never advance, Reset to First Launch in Settings, one region per continent with Oceania spanning Indonesia to Hong Kong, Full Resonance as a pace tier (a phantom every second or two, two more live, health scaled per rift group so missions stay about a tenth longer), session stats and medals on results (PRs #17 through #21). Meta's validation and compatibility tests were still running at upload time. The upload utility again reported version 211.0.0 of itself available; not updated.
 
 Things to feel on this build: the first boot after a reset (world map with Training leading), an overrun district at Full Resonance (is the feed readable at five live phantoms, do missions still run 3 to 5 minutes), the Asia and Oceania outlines, and liberating a city to see its front recede. Pull `user://run_log.csv` with `tools/pull_run_log.ps1` after tester sessions.
+
+### 2026-11-07 — self, Quest 3, alpha build code 4 (67cbbbc)
+
+- **Difficulty.** The tiers still do not feel distinct. A full pass on every mission kind at every tier starts with a layout of what each one is today ([Difficulty_Matrix.md](Difficulty_Matrix.md)), then adjustments agreed from it.
+- **Chen's first-attempt line.** "We haven't seen this rift before" played at the start of almost every mission: every world district is a new mission id, so the first-attempt moment fires nearly every time. Ten more first-attempt lines added and voiced; all fourteen pass `check_vo.ps1`.
+- **Pink floor lane removed.** Too strong a tell, and the pink was already easy to dodge. The bill and the straightening aim are the tell now. Training's card and Chen's pink lines no longer mention a lane.
+
+### 2026-11-08 — design session (no headset), after alpha build code 4
+
+Not a play session: David's answers to the difficulty layout ([Difficulty_Matrix.md](Difficulty_Matrix.md)), and what was built from them.
+
+- **Decided.** A step up is more phantoms, a bit faster, and new body movements; forgiveness stays. Easy is clearly gentler and intensity rises at every level whatever the mission; harder levels may run longer. Each level gets its own missions, with a finale closing each section. Yellow and blue stay the most frequent, green the least, and pinks come more on Medium and Hard as an extra layer between punches. Movement comes from new phantoms, the Ray and the Eel, not the rift; push-ups stay with the tentacles (the Flatfish was rejected). Every Hard mission asks for squats and jumps, to try. Names agreed: Clean Seal, Cover the Team, First Charge; Flurry, Crossfire, Low Ceiling, Close the Sector; Flurry, Storm, Undertow, Last Stand, Shut the Maw. Per-district twists are on hold until the missions are balanced.
+- **Built.** The three levels' missions, the Ray and the Eel, the extras layer, Last Stand's three doors across the front, and the Maw's lighter form for Medium's finale. Chen's script tripled to 622 voiced lines before the ElevenLabs subscription ended.
+- **No slams at Medium.** After reading the build, David cut the lighter Maw's slam that pulled straight back: slams belong to Hard and always end in push-ups, so any other slam would confuse. The lighter form now sweeps at duck depth and throws its volley. Its withdraw line and one countdown take that said "Mind the slams" were removed (618 voiced lines).
+- **To feel on the next build.** Whether Easy, Medium, and Hard now feel clearly apart; the Ray's readability at speed; the Eel on the floor in time to jump; Storm and Last Stand intensity; and the lighter Maw.
+
+### 2026-11-08 — headset session, Easy and Medium (development build)
+
+- **Feel.** Easy and Medium feel a lot better: the levels read as distinct now. No Rays or Eels seen yet (none at Easy by design; Medium's Rays are in Low Ceiling and Close the Sector), so no feedback on them.
+- **Close the Sector's boss felt pretty good.** Asked for its jump pair back so it is more than ducks and the escort, and for a bigger escort. Done: the lighter Maw keeps its low-sweep jump pair (still no slam), and a summon calls six phantoms instead of four, on both forms so Hard never has less.
+- **Pinks doubled.** Body and contact radius both twice the size (contact 0.6 m from its path instead of 0.3), so getting out of the way takes a real step. Training's clearance before it releases a paused pink rose from 0.5 m to 0.75 m to stay outside the new radius.

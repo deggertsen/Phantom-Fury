@@ -1,6 +1,6 @@
 # Phantom Enemy System
 
-How phantoms work in the code today, and what is still planned. Updated 2026-10-13.
+How phantoms work in the code today, and what is still planned. Updated 2026-11-08.
 
 ## Species and rules
 
@@ -9,7 +9,9 @@ How phantoms work in the code today, and what is still planned. Updated 2026-10-
 | Yellow | Angler | `yellow_phantom.gd` on `resonance_phantom.gd` | Left hand. Lure is the crit. | 100 (crit 220) | 10 (crit 20) |
 | Blue | Angler | `blue_phantom.gd` on `resonance_phantom.gd` | Right hand. Lure is the crit. | 100 (crit 220) | 10 (crit 20) |
 | Green | Carapace | `green_phantom.gd` | Both hands inside 0.55 s. First hand is a catch. | 180 | 16 |
-| Pink | Spearfin | `pink_phantom.gd` | Cannot be punched. Leave its lane. | 200 | 18 |
+| Pink | Spearfin | `pink_phantom.gd` | Cannot be punched. Get out of its path. | 200 | 18 |
+| Orange | Ray | `ray_phantom.gd` on `sweep_creature.gd` | Cannot be punched. Go under it: a duck at Medium, a squat at Hard. | 150 | 14 |
+| White | Eel | `eel_phantom.gd` on `sweep_creature.gd` | Cannot be punched. Jump it. Hard only. | 150 | 14 |
 | none | Drifter | `phantom.gd` base | Any hand. Not in any wave pool today. | 100 | 10 |
 
 A valid strike during the phantom's commit phase is "on beat": score times 1.25, rift damage times 1.15. Because strikes only count in reach, nearly every valid hit is on beat. Pink's dodge is always on beat.
@@ -47,7 +49,15 @@ The lure (`SweetSpotVisual`) sits in one of three places relative to the face th
 Approaches lower and faster, widens its body in the commit phase. The first hand to touch it starts a 0.55 s window and returns `block_half`; the other hand inside that window completes the block. The same hand again, or a late second hand, restarts the window.
 
 ### Spearfin specifics
-Does not use the arc. It telegraphs for `telegraph_seconds` (1.15 s) while a chevron lane shader draws on the floor from the fish to the player and a little past. The aim starts bowed to one side and straightens as the telegraph completes, then it charges at `charge_speed` (7 m/s). Passing its locked target without possessing resolves it as a dodge.
+Does not use the arc. It telegraphs for `telegraph_seconds` (1.15 s); nothing is drawn on the floor (the chevron lane was removed on 2026-11-07 as too strong a tell), so the tell is the bill and the aim. The aim starts bowed to one side and straightens as the telegraph completes, then it charges at `charge_speed` (7 m/s). Passing its locked target without possessing resolves it as a dodge. Since 2026-11-08 it is twice the size of the other phantoms (`SIZE`), body and contact radius alike (0.6 m from its path to the head or body instead of 0.3), so the dodge is a real step rather than a lean.
+
+### Ray and Eel specifics
+Added 2026-11-08, when David asked for body movement to come from phantoms rather than the rift. Both are `SweepCreature`s: a `ResonanceSweep` with its rails and blade hidden, carrying a creature body. Each flies out of its rift (`approach_speed` 4.2 m/s, scaled by the wave's speed), lines up 7.5 m out, and then runs the sweep: the tell (1.15 s, scaled), then the pass at `blade_speed` through where the Striker stands. The pass is judged exactly as the sweep's blade: a head under the line clears a Ray (a bend still clears it, without the bonus), and an Eel is cleared by being in the air, just landed, or taking off (the low sweep's jump check). Like every sweep they wait for one another, with a rest between, so movements never come back to back.
+
+- **Ray** (orange manta, `CreatureMesh.ray`): flies at the line, which is a duck (`squat_depth` 0.12) below Full Resonance and a squat (0.20) at it; `DifficultyTier.apply_wave` sets the depth. Its nose lifts while it lines up so the Striker sees its belly rather than a thin edge.
+- **Eel** (white, `CreatureMesh.eel`): drops to the floor and sweeps broadside through the feet like a skipping rope. Full Resonance only: `DifficultyTier` drops it from any wave at a tier without jumps.
+
+Neither comes from a wave's `pool`. They ride the wave's extras layer (see Spawning).
 
 ## Training hold
 
@@ -61,16 +71,18 @@ The difficulty sits on top of the wave. `RoundController.begin_round(mission, ti
 
 | Tier | `speed_scale` | `telegraph_scale` | rift `health` | spawn `interval` | contact damage | Sweeps |
 |---|---|---|---|---|---|---|
-| Assist | x0.85 | x1.25 | x0.8 | x1.15 | x0.6 (12 a possession) | duck depth at most |
+| Assist | x0.85 | x1.25 | x0.96 | x1.04 | x0.6 (12 a possession) | duck depth at most |
 | Standard | x1 | x1 | x1 | x1 | x1 (20) | duck depth at most |
-| Operator | x1.12 | x0.85 | x1.15 | x0.9 | x1.25 (25) | duck depth at most |
-| Full Resonance | x1 | x1 | x1.1 | x1 | x1 (20) | none in ordinary rifts; a wave's own sweep asks for a squat (0.20) |
+| Operator | x1 | x1 | x1 | x1 | x1 (20) | duck depth at most outside the boss; the Maw's lighter form (its jump pair is the one jump below Full Resonance) |
+| Full Resonance | x1 | x1 | x1 | x1 | x1 (20) | Rays at squat depth (0.20), and Eels; a wave's own sweep asks for a squat |
+
+Since 2026-11-08 only Assist scales: each level's missions are authored at its own pace in `WorldMap.build_mission` (see [Difficulty_Matrix.md](Difficulty_Matrix.md)), and Operator and Full Resonance set what the body is asked for, which bosses may come, and which extras survive (no Eel without jumps).
 
 Standard leaves every wave exactly as the catalog has it. Contact damage is the wave field `contact_scale`: `RiftManager` multiplies the `contact_damage` of everything it spawns or that attacks for it (a boss's sweep or slam), so the scaled amount travels through `player_contact`, the rift, the director, and the round controller to `LifeForceManager.apply_damage`. A boss's escort is always a phantom, even from a pool with a sweep in it.
 
 ## Spawning
 
-`Scripts/Rifts/rift_manager.gd` spawns on a timer from its wave's `pool`, up to `max_live` live phantoms, offset in front of the portal. `Scripts/Rifts/rift_spawn_manager.gd` (the RiftDirector) decides how many rifts are open, where they sit, and when the next one replaces a sealed one. Wave fields: `health`, `interval`, `max_live`, `speed_scale`, `telegraph_scale`, `pool`, `scale`, and optionally `squat_depth` (sweeps), and `contact_scale` (set by the difficulty).
+`Scripts/Rifts/rift_manager.gd` spawns on a timer from its wave's `pool`, up to `max_live` live phantoms, offset in front of the portal. Since 2026-11-08 a wave may also carry `extras`, `[{"id", "every", "max"}]`: pinks, Rays, and Eels on their own timers, on top of the feed. They never take one of `max_live`'s slots, each id keeps to its own `max`, and a pink waits until a phantom of the feed is out so the dodge lands between punches. Pools are yellow, blue, and green only, yellow and blue always the most frequent and green the least (David, 2026-11-08); the difficulty audit fails any wave that breaks that. `Scripts/Rifts/rift_spawn_manager.gd` (the RiftDirector) decides how many rifts are open, where they sit, and when the next one replaces a sealed one. Wave fields: `health`, `interval`, `max_live`, `speed_scale`, `telegraph_scale`, `pool`, `scale`, and optionally `squat_depth` (sweeps), and `contact_scale` (set by the difficulty).
 
 Sealing a rift stops its spawning and dissolves the portal, but phantoms already out keep their course and still score or possess. The rift emits `drained` once they are gone, the director emits `all_clear` once every rift is sealed and drained, and only then does the round end in victory. Phantoms dissolving from a stall or round cleanup no longer count as live.
 

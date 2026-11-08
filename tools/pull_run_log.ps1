@@ -159,14 +159,15 @@ Write-Host ''
 Write-Host "Actual against expected minutes, victories only ($($rows.Count) rounds in $file)"
 $table | Format-Table Mission, Tier, Wins, Losses, Median, Fastest, Slowest, Card, Flag, Boss, 'Dmg/kill', 's/kill' -AutoSize | Out-Host
 
-# Each tier's median against Standard's, per mission: Assist and Operator should sit within a few
-# percent, Full Resonance about a tenth longer (Tests/difficulty_audit.gd holds the paper version).
+# Assist's median against Standard's, per mission: within a few percent. Since 2026-11-08 the other
+# tiers play their own missions (development/Difficulty_Matrix.md), so only Assist is compared.
+# Tests/difficulty_audit.gd holds the paper version.
 $ratios = foreach ($mission in ($table | Group-Object Mission)) {
     $standard = $mission.Group | Where-Object { $_.Tier -eq 'standard' -and $null -ne $_._Median }
     if (-not $standard) { continue }
     foreach ($entry in $mission.Group) {
-        if ($entry.Tier -eq 'standard' -or $null -eq $entry._Median) { continue }
-        $target = if ($entry.Tier -eq 'full_resonance') { 0.10 } else { 0.0 }
+        if ($entry.Tier -ne 'assist' -or $null -eq $entry._Median) { continue }
+        $target = 0.0
         $drift = $entry._Median / $standard._Median - 1.0
         [pscustomobject]@{
             Mission  = $entry.Mission
@@ -178,7 +179,7 @@ $ratios = foreach ($mission in ($table | Group-Object Mission)) {
     }
 }
 if ($ratios) {
-    Write-Host 'Each tier against Standard (medians; needs victories at Standard and the tier)'
+    Write-Host 'Assist against Standard (medians; needs victories at both)'
     $ratios | Format-Table -AutoSize | Out-Host
 }
 $flagged = @($table | Where-Object { $_.Flag })

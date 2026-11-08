@@ -30,6 +30,9 @@ const VARIANTS := {
 	"green": {"base": 180, "damage": 16},
 	"pink": {"base": 200, "damage": 18, "on_beat": true},
 	"sweep": {"base": 150, "damage": 14},
+	# Answered with the body: a duck or squat under a Ray, a jump over an Eel. A clean one is on beat.
+	"ray": {"base": 150, "damage": 14, "on_beat": true},
+	"eel": {"base": 150, "damage": 14, "on_beat": true},
 }
 ## A reference round never resolves more than this many phantoms in one wave.
 const WAVE_LIMIT := 2000
@@ -52,6 +55,11 @@ static func reference_score(mission: Dictionary, crits: bool, break_every: int =
 		var multiplier := 1.0
 		var chain := 0
 		var resolves := 0
+		# The extras layer: each arrives once in its "every", between the feed's kills.
+		var extras: Array = wave.get("extras", [])
+		var due: Array[float] = []
+		for _entry in extras:
+			due.append(0.0)
 		while health > 0.0 and resolves < WAVE_LIMIT:
 			var numbers: Dictionary = VARIANTS.get(String(pool[resolves % pool.size()]), VARIANTS["yellow"])
 			var crit := crits and numbers.has("crit_base")
@@ -68,6 +76,16 @@ static func reference_score(mission: Dictionary, crits: bool, break_every: int =
 			score += roundi(float(numbers["crit_base" if crit else "base"]) * multiplier)
 			health -= roundi(float(numbers["crit_damage" if crit else "damage"]) * REFERENCE_POWER) + team_drain
 			resolves += 1
+			for e in extras.size():
+				due[e] += cadence / maxf(float(extras[e].get("every", 0.0)), 0.1)
+				while due[e] >= 1.0 and health > 0.0:
+					due[e] -= 1.0
+					var extra: Dictionary = VARIANTS.get(String(extras[e].get("id", "")), VARIANTS["sweep"])
+					multiplier = minf(multiplier + RoundController.CHAIN_GAIN + (RoundController.ON_BEAT_GAIN if extra.get("on_beat", false) else 0.0), RoundController.MAXIMUM_MULTIPLIER)
+					chain += 1
+					score += roundi(float(extra["base"]) * multiplier)
+					health -= float(extra["damage"])
+					resolves += 1
 	return int(score)
 
 ## {"bronze", "silver", "gold"}: the least score that earns each, for a mission at its tier.

@@ -8,6 +8,9 @@ const SCENE_BY_ID := {
 	"pink": "res://Scenes/Phantoms/pink_phantom.tscn",
 	# Not a phantom: a rift hazard the player squats under. It speaks the same spawn interface.
 	"sweep": "res://Scenes/Hazards/resonance_sweep.tscn",
+	# Phantoms answered with the body, not a punch. They ride a rift's extras layer, never its pool.
+	"ray": "res://Scenes/Phantoms/ray_phantom.tscn",
+	"eel": "res://Scenes/Phantoms/eel_phantom.tscn",
 }
 
 static func scene_path(variant_id: String) -> String:

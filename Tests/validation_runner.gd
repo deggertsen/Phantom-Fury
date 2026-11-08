@@ -31,6 +31,7 @@ func _run_validation() -> void:
 	await _validate_breach_sites()
 	await _validate_results_menu()
 	await _validate_pink_dodge()
+	_validate_chen_takes()
 	_validate_squat_detector()
 	_validate_push_up_detector()
 	_validate_jump_detection()
@@ -54,6 +55,7 @@ func _run_validation() -> void:
 	await _validate_punch_direction()
 	await _validate_tutorial_flow()
 	await _validate_resonance_sweep()
+	await _validate_body_phantoms()
 	_validate_hand_tracking_probe()
 	_validate_tracked_hands()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(VALIDATION_RUN_LOG))
@@ -309,6 +311,9 @@ func _validate_pink_dodge() -> void:
 	var pink := pink_scene.instantiate()
 	root.add_child(pink)
 	await process_frame
+	# The floor lane was removed on 2026-11-07: the bill and the aim are the whole tell.
+	if pink.find_child("DodgeLane", true, false) != null:
+		failures.append("Pink still paints a lane on the floor")
 	pink._telegraph_remaining = 0.0
 	pink._locked_target = pink.global_position + Vector3.FORWARD
 	pink._previous_target_distance = 0.5
@@ -367,6 +372,32 @@ func _validate_pink_dodge() -> void:
 	inline.queue_free()
 	await process_frame
 
+## Chen picks a recorded take before a line still waiting for its clip, and never the take she
+## played last, so new lines in the script never play as silent captions while recorded ones exist.
+func _validate_chen_takes() -> void:
+	var chen := ChenComms.new()
+	chen._streams = {"probe_2": AudioStreamWAV.new(), "probe_4": AudioStreamWAV.new()}
+	var seen := {}
+	for i in 40:
+		var take := chen._pick_take("probe", 5)
+		if take != 1 and take != 3:
+			failures.append("Chen picked take %d, which has no recording, over recorded takes" % (take + 1))
+			break
+		if take == int(chen._last_take.get("probe", -1)):
+			failures.append("Chen repeated the take she played last")
+			break
+		chen._last_take["probe"] = take
+		seen[take] = true
+	if seen.size() != 2:
+		failures.append("Chen did not rotate between her recorded takes")
+	chen._streams = {}
+	chen._last_take = {"probe": 0}
+	for i in 20:
+		if chen._pick_take("probe", 3) == 0:
+			failures.append("With nothing recorded, Chen repeated the take she played last")
+			break
+	chen.free()
+
 func _validate_attack_window() -> void:
 	var yellow_scene := load("res://Scenes/Phantoms/yellow_phantom.tscn") as PackedScene
 	var yellow := yellow_scene.instantiate()
@@ -409,13 +440,33 @@ func _validate_world_map() -> void:
 		failures.append("A threatened city should play Standard, or Assist as the session choice")
 	if WorldMap.has_missions(WorldMap.STATE_SAFE) or WorldMap.has_missions(WorldMap.STATE_CONSUMED):
 		failures.append("Safe or consumed cities offer missions")
-	# Sections: shape, links, and a way around every Maw.
+	# Close the Sector is the Maw's lighter form in some sections and a harder Crossfire in others.
+	var sector_forms := {}
+	for index in 12:
+		for node in WorldMap.section("portland", index, DifficultyTier.OPERATOR)["nodes"]:
+			if node["kind"] == WorldMap.KIND_CLOSE_SECTOR:
+				sector_forms[bool(node.get("boss", false))] = true
+	if sector_forms.size() != 2:
+		failures.append("Close the Sector never varies its form across twelve sections: %s" % [sector_forms.keys()])
+	# Sections: shape and links, the same at every level; each level deals its own kinds, with its
+	# finale alone in the last column.
 	for city_id in ["portland", "tokyo", "tehran"]:
 		for index in 6:
 			var section := WorldMap.section(city_id, index)
 			var again := WorldMap.section(city_id, index)
 			if str(section) != str(again):
 				failures.append("Section %s/%d is not stable for its seed" % [city_id, index])
+			for level_tier in [DifficultyTier.STANDARD, DifficultyTier.OPERATOR, DifficultyTier.FULL_RESONANCE]:
+				var dealt := WorldMap.section(city_id, index, level_tier)
+				if str(dealt["edges"]) != str(section["edges"]) or (dealt["nodes"] as Array).size() != (section["nodes"] as Array).size():
+					failures.append("Section %s/%d changes its layout at %s" % [city_id, index, level_tier])
+				var roster: Dictionary = WorldMap.ROSTERS[WorldMap.level_for(level_tier)]
+				for node in dealt["nodes"]:
+					var finale := int(node["column"]) == 2
+					if finale and node["kind"] != roster["finale"]:
+						failures.append("Section %s/%d at %s ends on %s, not its finale" % [city_id, index, level_tier, node["kind"]])
+					if not finale and not node["kind"] in roster["regular"]:
+						failures.append("Section %s/%d at %s deals %s, which that level does not offer" % [city_id, index, level_tier, node["kind"]])
 			var nodes: Array = section["nodes"]
 			var columns := {}
 			for node in nodes:
@@ -425,14 +476,8 @@ func _validate_world_map() -> void:
 				continue
 			for column in 3:
 				var members: Array = columns[column]
-				if members.size() < 1 or members.size() > 3:
+				if members.size() < 1 or members.size() > 3 or (column == 2 and members.size() != 1):
 					failures.append("Section %s/%d column %d has %d districts" % [city_id, index, column, members.size()])
-				var maws := 0
-				for member in members:
-					if member["kind"] == WorldMap.KIND_MAW:
-						maws += 1
-				if maws == members.size():
-					failures.append("Section %s/%d column %d is all Maws" % [city_id, index, column])
 				if column < 2:
 					for member in members:
 						var linked := false
@@ -546,47 +591,92 @@ func _validate_world_regions() -> void:
 					if (mine as Rect2).intersects(theirs):
 						failures.append("%s and %s overlap" % [region_data["id"], other["id"]])
 
-## Every district kind runs about as long as an operation: Clean Seal and Crossfire seal four
-## rifts, Cover the Team holds one for three to five minutes, Shut the Maw is The Maw's rift.
+## Every district kind at every level that offers it: its name, objective, rifts, a card of two
+## minutes or more, and a pressure label and bark per rift with a seal line between. Clean Seal
+## escalates, the pair kinds open in pairs, a hold's player shortens it, Last Stand spreads three
+## holds across the front, Close the Sector shows one card for both its forms, and only its boss
+## form carries the Maw's lighter form. Each kind's own words for Chen are in her script.
 func _validate_world_kinds() -> void:
 	var city := WorldMap.city("portland")
-	var expected_rifts := {WorldMap.KIND_SINGLE: 4, WorldMap.KIND_DUAL: 4, WorldMap.KIND_HOLD: 1, WorldMap.KIND_MAW: 1}
-	var objectives := {WorldMap.KIND_SINGLE: "SEAL FOUR RIFTS", WorldMap.KIND_DUAL: "SEAL TWO PAIRS", WorldMap.KIND_HOLD: "COVER THE TEAM", WorldMap.KIND_MAW: "SEAL THE MAW"}
-	var names := {WorldMap.KIND_SINGLE: "CLEAN SEAL", WorldMap.KIND_DUAL: "CROSSFIRE", WorldMap.KIND_HOLD: "COVER THE TEAM", WorldMap.KIND_MAW: "SHUT THE MAW"}
+	var expected := {
+		WorldMap.KIND_SINGLE: ["CLEAN SEAL", "SEAL FOUR RIFTS", 4],
+		WorldMap.KIND_HOLD: ["COVER THE TEAM", "COVER THE TEAM", 1],
+		WorldMap.KIND_FIRST_CHARGE: ["FIRST CHARGE", "SEAL FOUR RIFTS", 4],
+		WorldMap.KIND_FLURRY: ["FLURRY", "SEAL THREE RIFTS", 3],
+		WorldMap.KIND_DUAL: ["CROSSFIRE", "SEAL TWO PAIRS", 4],
+		WorldMap.KIND_LOW_CEILING: ["LOW CEILING", "SEAL FOUR RIFTS", 4],
+		WorldMap.KIND_CLOSE_SECTOR: ["CLOSE THE SECTOR", "CLOSE THE SECTOR", 4],
+		WorldMap.KIND_STORM: ["STORM", "SEAL THREE RIFTS", 3],
+		WorldMap.KIND_UNDERTOW: ["UNDERTOW", "SEAL FOUR RIFTS", 4],
+		WorldMap.KIND_LAST_STAND: ["LAST STAND", "HOLD ALL THREE", 3],
+		WorldMap.KIND_MAW: ["SHUT THE MAW", "SEAL THE MAW", 1],
+	}
+	var lines: Dictionary = (load("res://Assets/Audio/VO/chen/chen_lines.json") as JSON).data.get("events", {})
 	for kind in WorldMap.KINDS:
-		var mission := WorldMap.build_mission(city, 0, {"id": "s0n1", "name": "Harbor", "kind": kind, "site": "harbor"}, DifficultyTier.STANDARD)
-		var rifts: Array = mission.get("rifts", [])
-		if rifts.size() != expected_rifts[kind]:
-			failures.append("%s opens %d rifts, not %d" % [kind, rifts.size(), expected_rifts[kind]])
-		if mission.get("objective", "") != objectives[kind]:
-			failures.append("%s's objective is %s" % [kind, mission.get("objective", "")])
-		if WorldMap.kind_label(kind) != names[kind]:
-			failures.append("%s is no longer called %s" % [kind, names[kind]])
-		var minutes: Array = mission.get("expected_minutes", [])
-		if minutes.size() != 2 or int(minutes[0]) < 2 or int(minutes[1]) <= int(minutes[0]):
-			failures.append("%s expects %s minutes; a district should run at least two" % [kind, minutes])
-		if (mission.get("pressure_labels", []) as Array).size() != rifts.size() or (mission.get("open_barks", []) as Array).size() != rifts.size() or (mission.get("seal_lines", []) as Array).size() != rifts.size() - 1:
-			failures.append("%s does not carry a pressure label and bark per rift and a seal line between" % kind)
-		match kind:
-			WorldMap.KIND_SINGLE:
-				if rifts[0] != rifts[2] or rifts[1] != rifts[3] or int(rifts[1]["health"]) <= int(rifts[0]["health"]) or float(rifts[1]["interval"]) >= float(rifts[0]["interval"]):
-					failures.append("Clean Seal is not two escalating shapes repeated")
-			WorldMap.KIND_DUAL:
-				if int(mission.get("max_concurrent", 1)) != 2 or not mission.get("cluster_rifts", false):
-					failures.append("Crossfire does not open its rifts in pairs")
-			WorldMap.KIND_HOLD:
-				var hold: Dictionary = rifts[0]
-				var hold_seconds := float(hold.get("hold_seconds", 0.0))
-				# A strong puncher (1.3x rift damage) kills one per spawn against the team's own drain.
-				var strong := float(hold["health"]) / (WorldMap.KILL_DAMAGE * 1.3 / float(hold["interval"]) + float(hold["health"]) / maxf(hold_seconds, 1.0))
-				if hold_seconds <= 0.0 or hold_seconds > 300.0 or strong < 170.0:
-					failures.append("Cover the Team runs %.0f s for a strong puncher and %.0f s on its own, not three to five minutes" % [strong, hold_seconds])
-				if WorldMap.estimate_seconds(rifts) >= hold_seconds:
-					failures.append("Cover the Team's player never shortens the hold")
-			WorldMap.KIND_MAW:
-				var maw := MissionCatalog.get_mission("the_maw")
-				if rifts != maw.get("rifts", []) or minutes != maw.get("expected_minutes", []):
-					failures.append("Shut the Maw is not The Maw's rift")
+		if not expected.has(kind):
+			failures.append("No expectations for district kind %s" % kind)
+	for level in [WorldMap.LEVEL_EASY, WorldMap.LEVEL_MEDIUM, WorldMap.LEVEL_HARD]:
+		var tier := WorldMap.tier_of_level(level)
+		for kind in WorldMap.kinds_for(tier):
+			var want: Array = expected.get(kind, ["", "", 0])
+			var mission := WorldMap.build_mission(city, 0, {"id": "s0n1", "name": "Harbor", "kind": kind, "site": "harbor"}, tier)
+			var rifts: Array = mission.get("rifts", [])
+			var name := "%s at %s" % [kind, level]
+			if WorldMap.kind_label(kind) != want[0] or mission.get("title", "") != want[0]:
+				failures.append("%s is not called %s" % [name, want[0]])
+			if mission.get("objective", "") != want[1]:
+				failures.append("%s's objective is %s, not %s" % [name, mission.get("objective", ""), want[1]])
+			if rifts.size() != int(want[2]):
+				failures.append("%s opens %d rifts, not %d" % [name, rifts.size(), want[2]])
+			var minutes: Array = mission.get("expected_minutes", [])
+			if minutes.size() != 2 or int(minutes[0]) < 2 or int(minutes[1]) <= int(minutes[0]):
+				failures.append("%s expects %s minutes; a district should run at least two" % [name, minutes])
+			if (mission.get("pressure_labels", []) as Array).size() != rifts.size() or (mission.get("open_barks", []) as Array).size() != rifts.size() or (mission.get("seal_lines", []) as Array).size() != rifts.size() - 1:
+				failures.append("%s does not carry a pressure label and bark per rift and a seal line between" % name)
+			var intro := String(mission.get("intro_event", ""))
+			if intro != "" and not lines.has(intro):
+				failures.append("%s's intro %s is not in Chen's script" % [name, intro])
+			match kind:
+				WorldMap.KIND_SINGLE:
+					for i in rifts.size() - 1:
+						if float(rifts[i + 1]["interval"]) > float(rifts[i]["interval"]) or int(rifts[i + 1]["health"]) < int(rifts[i]["health"]):
+							failures.append("Clean Seal does not escalate from rift %d" % (i + 1))
+				WorldMap.KIND_DUAL:
+					if int(mission.get("max_concurrent", 1)) != 2 or not mission.get("cluster_rifts", false):
+						failures.append("Crossfire does not open its rifts in pairs")
+				WorldMap.KIND_HOLD:
+					var hold_seconds := float(rifts[0].get("hold_seconds", 0.0))
+					if hold_seconds <= 0.0 or hold_seconds > 300.0:
+						failures.append("Cover the Team holds for %.0f s, not up to five minutes" % hold_seconds)
+					if WorldMap.estimate_seconds(rifts) >= hold_seconds:
+						failures.append("Cover the Team's player never shortens the hold")
+				WorldMap.KIND_LAST_STAND:
+					if int(mission.get("max_concurrent", 1)) != 3 or (mission.get("spread_rifts", []) as Array).size() != 3:
+						failures.append("Last Stand does not open three rifts across the front")
+					for door in rifts:
+						if float(door.get("hold_seconds", 0.0)) <= 0.0:
+							failures.append("A Last Stand door is not sealed by the team")
+					if WorldMap.estimate_seconds(rifts, 3) >= float(rifts[0].get("hold_seconds", 0.0)):
+						failures.append("Last Stand's player never shortens the hold")
+				WorldMap.KIND_CLOSE_SECTOR:
+					var pairs := WorldMap.build_mission(city, 0, {"id": "s0n1", "name": "Harbor", "kind": kind, "site": "harbor", "boss": false}, tier)
+					var boss := WorldMap.build_mission(city, 0, {"id": "s0n1", "name": "Harbor", "kind": kind, "site": "harbor", "boss": true}, tier)
+					if pairs.get("expected_minutes") != boss.get("expected_minutes"):
+						failures.append("Close the Sector's two forms show different cards: %s and %s" % [pairs.get("expected_minutes"), boss.get("expected_minutes")])
+					if pairs.has("tier_boss") or int(pairs.get("max_concurrent", 1)) != 2:
+						failures.append("Close the Sector's pairs form is not a harder Crossfire")
+					var light: Dictionary = boss.get("tier_boss", {})
+					if not light.get("light", false) or not DifficultyTier.apply_mission(boss, tier).has("boss"):
+						failures.append("Close the Sector's boss form does not bring the Maw's lighter form at Medium")
+					if (boss.get("world", {}) as Dictionary).get("boss", false) != true or boss.get("summary") != pairs.get("summary"):
+						failures.append("Close the Sector's boss form is not marked, or its card says which form it is")
+				WorldMap.KIND_MAW:
+					var full: Dictionary = mission.get("tier_boss", {})
+					if full.is_empty() or full.get("light", false) or not DifficultyTier.apply_mission(mission, tier).has("boss"):
+						failures.append("Shut the Maw at Hard does not carry the full Maw")
+	# A kind built at a level that never offers it still builds, so old records keep a card.
+	if WorldMap.build_mission(city, 0, {"id": "s0n1", "name": "Harbor", "kind": WorldMap.KIND_FLURRY, "site": "harbor"}, DifficultyTier.STANDARD).get("rifts", []).is_empty():
+		failures.append("Flurry built at Standard has no rifts")
 	# The catalog's cards are the estimate's (2026-11-01). A card set from timed runs may differ;
 	# the audit (_validate_difficulty_audit) still holds every card to containing the estimate.
 	for mission_id in ["first_light", "widen_the_ring"]:
@@ -1339,7 +1429,8 @@ func _validate_boss_only_at_full_resonance() -> void:
 		round_controller.begin_round(MissionCatalog.get_mission("the_maw"), tier)
 		round_controller._process(0.0)
 		var resonant := tier == DifficultyTier.FULL_RESONANCE
-		if (countdown[0] != "") != resonant:
+		# Medium and Hard each have Chen's countdown line; Easy goes straight in.
+		if (countdown[0] != "") != (resonant or tier == DifficultyTier.OPERATOR):
 			failures.append("%s countdown line is wrong: '%s'" % [tier, countdown[0]])
 		var rift: RiftManager = director.rift_instances[0] if not director.rift_instances.is_empty() else null
 		if rift == null:
@@ -1459,14 +1550,19 @@ func _validate_arc_rift_placement() -> void:
 func _validate_difficulty_audit() -> void:
 	for line in DifficultyAudit.write_report():
 		failures.append("Difficulty audit: %s" % line)
-	var keys := {}
+	# The audit reads every kind at every level that offers it, and every kind is offered somewhere.
+	var audited := {}
 	for entry in DifficultyAudit.entries():
-		keys[entry["key"]] = true
-	if keys.size() != MissionCatalog.all_missions().size() + WorldMap.KINDS.size():
-		failures.append("The difficulty audit does not read every operation and district kind: %s" % [keys.keys()])
+		audited["%s:%s" % [entry["level"], entry["kind"]]] = true
+	var offered := {}
+	for level in DifficultyAudit.LEVEL_ORDER:
+		for kind in WorldMap.kinds_for(WorldMap.tier_of_level(level)):
+			offered[kind] = true
+			if not audited.has("%s:%s" % [level, kind]):
+				failures.append("The difficulty audit does not read %s at %s" % [kind, level])
 	for kind in WorldMap.KINDS:
-		if not DifficultyAudit.SIBLINGS.has(kind) or MissionCatalog.get_mission(String(DifficultyAudit.SIBLINGS[kind][0])).is_empty():
-			failures.append("District kind %s has no sibling operation in the audit" % kind)
+		if not offered.has(kind):
+			failures.append("District kind %s is in no level's roster" % kind)
 	for variant in DifficultyAudit.BASE_TELL:
 		var phantom := (load(MissionCatalog.scene_path(String(variant))) as PackedScene).instantiate()
 		root.add_child(phantom)
@@ -1476,14 +1572,6 @@ func _validate_difficulty_audit() -> void:
 			failures.append("The audit puts %s's tell at %.2f s; the phantom's is %.2f s" % [variant, DifficultyAudit.BASE_TELL[variant], tell])
 		phantom.queue_free()
 	await process_frame
-	# The design's tier lengths, read off a paired mission (kill cadence sets the pace) and a
-	# single-rift one (the feed does).
-	for mission_id in ["double_breach", "widen_the_ring"]:
-		var standard := WorldMap.run_seconds(MissionCatalog.get_mission(mission_id))
-		for tier in [DifficultyTier.ASSIST, DifficultyTier.OPERATOR]:
-			var tiered := WorldMap.run_seconds(DifficultyTier.apply_mission(MissionCatalog.get_mission(mission_id), tier))
-			if absf(tiered / standard - 1.0) > DifficultyAudit.TIER_BAND:
-				failures.append("%s at %s runs %.0f s against Standard's %.0f s" % [mission_id, tier, tiered, standard])
 	# The run log's version code is the one the build ships with.
 	var presets := ConfigFile.new()
 	if presets.load("res://export_presets.cfg") == OK:
@@ -1541,7 +1629,7 @@ func _validate_run_log() -> void:
 		for i in mini(cells.size(), header.size()):
 			row[header[i]] = cells[i]
 		var expected: Array = DifficultyTier.apply_mission(MissionCatalog.get_mission("first_light"), DifficultyTier.OPERATOR)["expected_minutes"]
-		if cells.size() != header.size() or row["mission_id"] != "first_light" or row["kind"] != "operation" or row["tier"] != DifficultyTier.OPERATOR or row["outcome"] != "victory" or row["elapsed_seconds"] != "95.5" or row["phantoms_resolved"] != "2" or row["misses"] != "1" or row["rejections"] != "1" or row["rifts_sealed"] != "1" or row["rifts_total"] != "4" or int(row["rift_health"]) != RunLog.rift_health(DifficultyTier.apply_mission(MissionCatalog.get_mission("first_light"), DifficultyTier.OPERATOR)) or int(row["rift_health"]) <= 320 or int(row["expected_min"]) != int(expected[0]) or int(row["expected_max"]) != int(expected[1]) or int(row["version_code"]) != RunLog.version_code() or int(row["score"]) != round_controller.score:
+		if cells.size() != header.size() or row["mission_id"] != "first_light" or row["kind"] != "operation" or row["tier"] != DifficultyTier.OPERATOR or row["outcome"] != "victory" or row["elapsed_seconds"] != "95.5" or row["phantoms_resolved"] != "2" or row["misses"] != "1" or row["rejections"] != "1" or row["rifts_sealed"] != "1" or row["rifts_total"] != "4" or int(row["rift_health"]) != RunLog.rift_health(DifficultyTier.apply_mission(MissionCatalog.get_mission("first_light"), DifficultyTier.OPERATOR)) or int(row["expected_min"]) != int(expected[0]) or int(row["expected_max"]) != int(expected[1]) or int(row["version_code"]) != RunLog.version_code() or int(row["score"]) != round_controller.score:
 			failures.append("The run log line does not carry the round: %s" % lines[1])
 	round_controller.abandon_round()
 	round_controller._finished = false
@@ -1555,7 +1643,7 @@ func _validate_run_log() -> void:
 	# A district names its kind, and a cell with a comma stays one cell.
 	var district := WorldMap.build_mission({"id": "portland", "name": "Portland"}, 0, {"id": "s0n1", "name": "Harbor", "kind": WorldMap.KIND_HOLD, "site": "harbor"}, DifficultyTier.STANDARD)
 	var world_line := RunLog.line_for(DifficultyTier.apply_mission(district, DifficultyTier.ASSIST), &"defeat", 61.0, 10, {"boss": "a,b"})
-	if not world_line.contains(",world:portland:0:s0n1,hold,assist,defeat,61.0,10,0,0,0,0,0,2400,") or not world_line.contains(",\"a,b\","):
+	if not world_line.contains(",world:portland:0:s0n1,hold,assist,defeat,61.0,10,0,0,0,0,0,2496,") or not world_line.contains(",\"a,b\","):
 		failures.append("A district's run log line is wrong: %s" % world_line)
 	if OS.get_name() != "Android" and RunLog.external_copy_path() != "":
 		failures.append("The run log copies outside Android")
@@ -1992,6 +2080,196 @@ func _validate_resonance_sweep() -> void:
 	player.queue_free()
 	await process_frame
 
+## The Ray and the Eel (David, 2026-11-08): each flies out of its rift, lines up, and is judged as a
+## sweep with nothing of the rift drawn. A head under a Ray's line clears it and a standing head is
+## clipped; an Eel is cleared only by a jump. Both ride a wave's extras layer, outside the feed's
+## slots, beside pinks that wait for a phantom of the feed. Tiers gate them: a Ray asks a duck below
+## Full Resonance and a squat at it, and an Eel never comes without jumps. Last Stand's doors stand
+## at fixed bearings across the front; the Maw's lighter form never slams but keeps its jumps;
+## and Chen calls each one.
+func _validate_body_phantoms() -> void:
+	var player := Node3D.new()
+	player.name = "BodyTestPlayer"
+	player.add_to_group("Player")
+	var camera := Node3D.new()
+	camera.name = "XRCamera3D"
+	player.add_child(camera)
+	root.add_child(player)
+	camera.position = Vector3(0.0, 1.62, 0.0)
+	var ray_scene := load(MissionCatalog.scene_path("ray")) as PackedScene
+	var eel_scene := load(MissionCatalog.scene_path("eel")) as PackedScene
+	if ray_scene == null or eel_scene == null:
+		failures.append("The Ray or the Eel has no scene")
+		player.queue_free()
+		return
+	# A Ray flies in from its rift before it starts its run, and a duck clears it.
+	var ray := _spawn_sweep(ray_scene, Vector3(0.0, 2.2, -12.0)) as RayPhantom
+	if ray == null or ray.variant_id != &"ray" or ray.low or ray.blade_visible or ray.rails_visible:
+		failures.append("The Ray is not an unpunchable, undrawn high sweep")
+	else:
+		var ducked := _watch_sweep(ray)
+		_run_sweep(ray, 0.5)
+		if not ray.is_approaching() or ray.telegraph_progress() > 0.0 or ray._body_position.distance_to(Vector3(0.0, 2.2, -12.0)) < 1.0:
+			failures.append("The Ray did not fly in from its rift before its run")
+		camera.position = Vector3(0.0, 1.30, 0.0)
+		_run_sweep(ray, 6.0)
+		if ducked["resolved"].is_empty() or ducked["hurt"] or ducked["resolved"].get("variant_id", &"") != &"ray":
+			failures.append("A duck under a Ray did not clear it: %s" % ducked)
+		ray.free()
+	camera.position = Vector3(0.0, 1.62, 0.0)
+	var tall := _spawn_sweep(ray_scene, Vector3(0.0, 2.2, -12.0)) as RayPhantom
+	var stood := _watch_sweep(tall)
+	_run_sweep(tall, 6.0)
+	if not stood["hurt"] or not stood["resolved"].is_empty():
+		failures.append("A Ray passed a standing player without catching them")
+	tall.free()
+	# At Full Resonance a Ray flies low enough for a squat.
+	var deep := _spawn_sweep(ray_scene, Vector3(0.0, 2.2, -12.0)) as RayPhantom
+	deep.apply_wave(DifficultyTier.apply_wave({"squat_depth": DifficultyTier.DUCK_DEPTH}, DifficultyTier.FULL_RESONANCE))
+	if absf(deep.sweep_height - 1.62 * (1.0 - DifficultyTier.SQUAT_DEPTH)) > 0.01:
+		failures.append("A Full Resonance Ray does not fly at squat depth: %.3f" % deep.sweep_height)
+	deep.free()
+	# An Eel skims the floor: a standing player is caught, a jump clears it.
+	var eel := _spawn_sweep(eel_scene, Vector3(0.0, 2.2, -12.0)) as EelPhantom
+	if eel == null or eel.variant_id != &"eel" or not eel.low:
+		failures.append("The Eel is not a low sweep")
+	else:
+		var grounded := _watch_sweep(eel)
+		_run_sweep(eel, 6.0)
+		if not grounded["hurt"]:
+			failures.append("An Eel passed a player who stayed on the ground")
+		eel.free()
+	var hop := _spawn_sweep(eel_scene, Vector3(0.0, 2.2, -12.0)) as EelPhantom
+	var jumped := _watch_sweep(hop)
+	camera.position = Vector3(0.0, 1.80, 0.0)
+	_run_sweep(hop, 6.0)
+	if jumped["resolved"].is_empty() or jumped["hurt"] or jumped["resolved"].get("resolution_kind", &"") != &"jump":
+		failures.append("A jump over an Eel did not clear it: %s" % jumped)
+	hop.free()
+	camera.position = Vector3(0.0, 1.62, 0.0)
+	# Tiers: an Eel only with jumps, a Ray a duck below Full Resonance and a squat at it, and Assist
+	# eases the extras' timers as it does the feed.
+	var moving := {"health": 100, "interval": 3.0, "max_live": 3, "pool": ["yellow"], "squat_depth": DifficultyTier.DUCK_DEPTH, "extras": [{"id": "ray", "every": 10.0, "max": 1}, {"id": "eel", "every": 12.0, "max": 1}]}
+	for tier in DifficultyTier.ORDER:
+		var tiered := DifficultyTier.apply_wave(moving, tier)
+		var ids: Array = []
+		for entry in tiered["extras"]:
+			ids.append(entry["id"])
+		if ("eel" in ids) != (tier == DifficultyTier.FULL_RESONANCE) or not "ray" in ids:
+			failures.append("%s keeps extras %s; Eels belong only to Full Resonance" % [tier, ids])
+		var want := DifficultyTier.SQUAT_DEPTH if tier == DifficultyTier.FULL_RESONANCE else DifficultyTier.DUCK_DEPTH
+		if not is_equal_approx(float(tiered["squat_depth"]), want):
+			failures.append("%s asks a Ray for a %.2f dip" % [tier, tiered["squat_depth"]])
+	var eased: Dictionary = DifficultyTier.apply_wave(moving, DifficultyTier.ASSIST)["extras"][0]
+	if not is_equal_approx(float(eased["every"]), 10.0 * float(DifficultyTier.info(DifficultyTier.ASSIST)["interval"])):
+		failures.append("Assist does not ease the extras' timers with the feed")
+	# The extras layer: outside the feed's slots, each to its own cap, a pink only beside the feed.
+	var box := Node3D.new()
+	box.add_to_group("PhantomContainer")
+	root.add_child(box)
+	var rift := RiftManager.new()
+	rift.phantom_scenes = [load(MissionCatalog.scene_path("yellow"))]
+	root.add_child(rift)
+	await process_frame
+	rift.configure_wave({"health": 500, "interval": 30.0, "max_live": 1, "pool": ["yellow"], "extras": [{"id": "pink", "every": 0.5, "max": 1}, {"id": "ray", "every": 0.5, "max": 1}]})
+	rift.spawning_enabled = true
+	for _i in 60:
+		rift._tick_extras(1.0 / 30.0)
+	if rift.extras_live("pink") != 0 or rift.extras_live("ray") != 1:
+		failures.append("Before the feed sent anything: %d pinks and %d Rays out; a pink waits for the feed" % [rift.extras_live("pink"), rift.extras_live("ray")])
+	rift.start_spawning(true)
+	for _i in 60:
+		rift._tick_extras(1.0 / 30.0)
+	if rift.feed_live() != 1 or rift.extras_live("pink") != 1 or rift.extras_live("ray") != 1:
+		failures.append("The extras layer is off: feed %d, pinks %d, Rays %d" % [rift.feed_live(), rift.extras_live("pink"), rift.extras_live("ray")])
+	rift._on_spawn_timer_timeout()
+	if rift.feed_live() != 1:
+		failures.append("The feed went past its cap of one")
+	for phantom in rift.live_phantoms():
+		if not phantom.has_meta("extra"):
+			phantom.queue_free()
+	await process_frame
+	rift._on_spawn_timer_timeout()
+	if rift.feed_live() != 1:
+		failures.append("Extras out took the feed's slot: feed %d" % rift.feed_live())
+	rift.force_cleanup()
+	box.queue_free()
+	await process_frame
+	# Last Stand: three doors at fixed bearings across the front the player faced.
+	var container := Node3D.new()
+	container.add_to_group("PhantomContainer")
+	root.add_child(container)
+	var director := RiftDirector.new()
+	director.rift_manager_scene = load("res://Scenes/Rifts/rift_manager.tscn")
+	root.add_child(director)
+	await process_frame
+	var door := {"health": 100, "interval": 30.0, "max_live": 1, "pool": ["yellow"], "hold_seconds": 600.0}
+	director.start_round({"id": "stand_check", "max_concurrent": 3, "spread_rifts": [-60.0, 0.0, 60.0], "rifts": [door, door, door]})
+	var bearings: Array = []
+	for opened in director.rift_instances:
+		var flat := Vector3(opened.global_position.x, 0.0, opened.global_position.z)
+		bearings.append(roundi(rad_to_deg(Vector3.FORWARD.signed_angle_to(flat.normalized(), Vector3.DOWN))))
+	bearings.sort()
+	if bearings != [-60, 0, 60]:
+		failures.append("Last Stand's doors are not at -60, 0, and 60 degrees: %s" % [bearings])
+	director.cleanup_round()
+	director.queue_free()
+	container.queue_free()
+	await process_frame
+	# The Maw's lighter form: no slam in any cycle, the jump pair and the volley in every one, and
+	# it always comes through without touching the Full Resonance break odds.
+	var boss := MawBoss.new()
+	root.add_child(boss)
+	await process_frame
+	boss.boss_config = {"light": true}
+	for _cycle in 3:
+		var steps := boss._build_cycle()
+		boss._cycles += 1
+		var does: Array = steps.map(func(step: Dictionary) -> String: return String(step.get("do", "")))
+		if not "low_sweep" in does or "slam" in does or not "volley" in does or not "summon" in does:
+			failures.append("The Maw's lighter form slams, or lost its jumps or volley: %s" % [does])
+	boss.boss_config = {}
+	boss._cycles = 0
+	var full_does: Array = boss._build_cycle().map(func(step: Dictionary) -> String: return String(step.get("do", "")))
+	if not "low_sweep" in full_does or not "slam" in full_does:
+		failures.append("The full Maw lost its jump pair or its slam")
+	var settings := root.get_node_or_null("GameSettings")
+	var faced_before: int = int(settings.get("boss_maws_faced")) if settings else 0
+	boss.prepare({"boss": {"light": true, "anchor": 800, "anchor_seconds": 180.0}})
+	if not boss.breaks or not boss.is_light() or (settings and int(settings.get("boss_maws_faced")) != faced_before):
+		failures.append("The Maw's lighter form did not come through, or it counted toward the break odds")
+	boss.cleanup()
+	boss.queue_free()
+	await process_frame
+	# Chen: a call for each as it lines up, and a coaching line when one catches the Striker.
+	var lines: Dictionary = (load("res://Assets/Audio/VO/chen/chen_lines.json") as JSON).data.get("events", {})
+	for event in ["first_ray", "ray_call", "ray_call_low", "ray_clipped", "first_eel", "eel_call", "eel_clipped", "pink_call", "boss_medium_ready", "deploy_medium", "deploy_hard_moves"]:
+		if not lines.has(event):
+			failures.append("Chen has no %s line" % event)
+	var chen := ChenComms.new()
+	root.add_child(chen)
+	await process_frame
+	await process_frame
+	var duck := _spawn_sweep(ray_scene, Vector3(0.0, 2.2, -12.0)) as RayPhantom
+	var squat := _spawn_sweep(ray_scene, Vector3(0.0, 2.2, -12.0)) as RayPhantom
+	squat.squat_depth = DifficultyTier.SQUAT_DEPTH
+	var skim := _spawn_sweep(eel_scene, Vector3(0.0, 2.2, -12.0)) as EelPhantom
+	for pair in [[duck, "ray_call"], [squat, "ray_call_low"], [skim, "eel_call"]]:
+		chen._queue.clear()
+		chen._on_sweep_lit(pair[0])
+		if not chen._queue.any(func(entry: Dictionary) -> bool: return entry["event"] == pair[1]):
+			failures.append("Chen did not call %s" % pair[1])
+	chen._queue.clear()
+	chen._on_creature_contact(20.0, "ray")
+	chen._on_damage_applied(20.0, 80.0)
+	var said: Array = chen._queue.map(func(entry: Dictionary) -> String: return String(entry["event"]))
+	if not "ray_clipped" in said or "possessed" in said:
+		failures.append("A Ray's hit did not get Chen's coaching line: %s" % [said])
+	for node in [duck, squat, skim, chen]:
+		node.free()
+	player.queue_free()
+	await process_frame
+
 func _spawn_sweep(scene: PackedScene, at: Vector3) -> ResonanceSweep:
 	var sweep := scene.instantiate() as ResonanceSweep
 	sweep.position = at
@@ -2152,8 +2430,8 @@ func _validate_maw_boss() -> void:
 		failures.append("The boss Maw did not arm its rift to break")
 		await _end_boss_validation(round_controller, life, director, container, saved)
 		return
-	# 1600 at Standard, 1760 at Full Resonance, half of it on a Maw that breaks.
-	if rift.maximum_health != 880:
+	# 1600 at every tier since tiers stopped scaling health (2026-11-08), half of it on a Maw that breaks.
+	if rift.maximum_health != 800:
 		failures.append("A breaking Maw's phase one was not shortened: %d" % rift.maximum_health)
 	var closed := [false]
 	rift.closed.connect(func() -> void: closed[0] = true)
@@ -2644,7 +2922,7 @@ func _validate_phantom_hold() -> void:
 		var punch: Dictionary = pink.receive_strike({"hand_id": &"left", "position": pink.global_position, "direction": Vector3.FORWARD, "speed": 4.0})
 		if punch.get("valid", true) or not pink.is_held():
 			failures.append("A punch moved a held pink")
-		head.global_position += Vector3(0.6, 0.0, 0.0)
+		head.global_position += Vector3(0.9, 0.0, 0.0)
 		var line := pink.charge_line()
 		if Geometry3D.get_closest_point_to_segment(head.global_position, line[0], line[1]).distance_to(head.global_position) <= TutorialDirector.LANE_CLEARANCE:
 			failures.append("A side-step did not leave the pink's lane")
@@ -3039,14 +3317,15 @@ func _city_card(entry: Dictionary, section: Dictionary, sealed: Array, tier: Str
 		"expected_minutes": DifficultyTier.apply_mission(mission, tier).get("expected_minutes", []) if not mission.is_empty() else [], "best_seconds": 0.0,
 	}
 
-## A few Maw districts from playable cities' early sections: [{entry, section, node}].
+## A few Maw districts from playable cities' early sections, dealt as Hard deals them (the Maw is
+## Hard's finale since 2026-11-08): [{entry, section, node}].
 func _maw_districts() -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
 	for entry in WorldMap.cities():
 		if not entry.get("playable", false):
 			continue
 		for index in 4:
-			var section := WorldMap.section(String(entry["id"]), index)
+			var section := WorldMap.section(String(entry["id"]), index, DifficultyTier.FULL_RESONANCE)
 			for node in section["nodes"]:
 				if node["kind"] == WorldMap.KIND_MAW:
 					found.append({"entry": entry, "section": section, "node": node})
@@ -3090,21 +3369,31 @@ func _check_no_boss(panels: Array, what: String) -> void:
 ## District words: the new names, the same at every tier, and nothing in a district's mission
 ## that calls out a boss, a break, or the other district.
 func _validate_world_words() -> void:
-	var names := {WorldMap.KIND_SINGLE: "CLEAN SEAL", WorldMap.KIND_DUAL: "CROSSFIRE", WorldMap.KIND_HOLD: "COVER THE TEAM", WorldMap.KIND_MAW: "SHUT THE MAW"}
+	# The names David agreed on 2026-11-08.
+	var names := {
+		WorldMap.KIND_SINGLE: "CLEAN SEAL", WorldMap.KIND_HOLD: "COVER THE TEAM", WorldMap.KIND_FIRST_CHARGE: "FIRST CHARGE",
+		WorldMap.KIND_FLURRY: "FLURRY", WorldMap.KIND_DUAL: "CROSSFIRE", WorldMap.KIND_LOW_CEILING: "LOW CEILING",
+		WorldMap.KIND_CLOSE_SECTOR: "CLOSE THE SECTOR", WorldMap.KIND_STORM: "STORM", WorldMap.KIND_UNDERTOW: "UNDERTOW",
+		WorldMap.KIND_LAST_STAND: "LAST STAND", WorldMap.KIND_MAW: "SHUT THE MAW",
+	}
 	for kind in WorldMap.KINDS:
 		if WorldMap.kind_label(kind) != names.get(kind, ""):
 			failures.append("District kind %s is called %s" % [kind, WorldMap.kind_label(kind)])
 		for tier in DifficultyTier.ORDER:
-			var mission := WorldMap.build_mission(WorldMap.city("tokyo"), 0, {"id": "s0n1", "name": "Harbor", "kind": kind, "site": "harbor"}, tier)
-			for field in ["codename", "title", "summary", "objective", "start_line", "victory_line", "defeat_line"]:
-				var text := String(mission.get(field, "")).to_lower()
-				for word in ["boss", "break", "other district"]:
-					if word in text:
-						failures.append("A %s district's %s at %s says '%s': %s" % [kind, field, tier, word, mission.get(field, "")])
+			for boss_form in [false, true]:
+				var mission := WorldMap.build_mission(WorldMap.city("tokyo"), 0, {"id": "s0n1", "name": "Harbor", "kind": kind, "site": "harbor", "boss": boss_form}, tier)
+				_check_district_words(kind, tier, mission)
 	for entry in WorldMap.cities():
 		for text in [String(entry.get("blurb", "")), WorldMap.asks(String(entry.get("state", "")))]:
 			if "boss" in text.to_lower():
 				failures.append("%s's card says boss: %s" % [entry["name"], text])
+
+func _check_district_words(kind: String, tier: String, mission: Dictionary) -> void:
+	for field in ["codename", "title", "summary", "objective", "start_line", "victory_line", "defeat_line"]:
+		var text := String(mission.get(field, "")).to_lower()
+		for word in ["boss", "break", "other district"]:
+			if word in text:
+				failures.append("A %s district's %s at %s says '%s': %s" % [kind, field, tier, word, mission.get(field, "")])
 
 ## GameFlowController on a world mission's results: the section is the city map, so picking a
 ## district and deploying it work there, behind the same release a held trigger needs.
@@ -3501,7 +3790,7 @@ func _validate_tutorial_flow() -> void:
 							failures.append("A punch released a held pink")
 					elif not acted.has(&"pink_step") and "tutorial_pink_punch" in tutorial.spoken:
 						acted[&"pink_step"] = true
-						camera.position = Vector3(0.6, 1.6, 0.0)
+						camera.position = Vector3(0.9, 1.6, 0.0)
 			&"possession":
 				camera.position = Vector3(0.0, 1.6, 0.0)
 			&"power":
@@ -3695,12 +3984,17 @@ func _validate_medals() -> void:
 		failures.append("First Light's thresholds differ between the mission and its id")
 	if MissionMedals.par_score(cases["Clean Seal"]) == MissionMedals.par_score(cases["First Light"]):
 		failures.append("Clean Seal and First Light share a par; each mission needs its own")
-	var standard := int(MissionMedals.operation_thresholds("widen_the_ring", DifficultyTier.STANDARD)[MissionMedals.GOLD])
-	var operator := int(MissionMedals.operation_thresholds("widen_the_ring", DifficultyTier.OPERATOR)[MissionMedals.GOLD])
-	var resonance := int(MissionMedals.operation_thresholds("widen_the_ring", DifficultyTier.FULL_RESONANCE)[MissionMedals.GOLD])
-	# Operator adds only 4% rift health, which may not add a kill; Full Resonance adds a tenth.
-	if operator < standard or resonance <= standard:
-		failures.append("Widen the Ring's gold does not rise with rift health: Standard %d, Operator %d, Full Resonance %d" % [standard, operator, resonance])
+	# Flurry is played at Medium and Hard; Hard's is the bigger mission, with extras to answer, so its
+	# gold is higher. Every kind's medals rise at the level it is played.
+	var medium_gold := int(MissionMedals.world_thresholds(WorldMap.KIND_FLURRY, DifficultyTier.OPERATOR)[MissionMedals.GOLD])
+	var hard_gold := int(MissionMedals.world_thresholds(WorldMap.KIND_FLURRY, DifficultyTier.FULL_RESONANCE)[MissionMedals.GOLD])
+	if hard_gold <= medium_gold:
+		failures.append("Flurry's gold does not rise from Medium (%d) to Hard (%d)" % [medium_gold, hard_gold])
+	for level_tier in [DifficultyTier.STANDARD, DifficultyTier.OPERATOR, DifficultyTier.FULL_RESONANCE]:
+		for kind in WorldMap.kinds_for(level_tier):
+			var levels := MissionMedals.world_thresholds(kind, level_tier)
+			if not (int(levels["bronze"]) < int(levels["silver"]) and int(levels["silver"]) < int(levels["gold"])):
+				failures.append("%s at %s medal thresholds do not rise: %s" % [kind, level_tier, levels])
 	for kind in WorldMap.KINDS:
 		for tier in DifficultyTier.ORDER:
 			var world_thresholds := MissionMedals.world_thresholds(kind, tier)

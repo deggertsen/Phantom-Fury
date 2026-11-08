@@ -19,11 +19,36 @@ const OVERRUN_UNITS := 16.0
 const DANGER_UNITS := 48.0
 const THREATENED_UNITS := 80.0
 
+## District kinds. The ids stay in saved records (record_key), so the old four keep theirs.
+## Each difficulty level has its own roster (ROSTERS, development/Difficulty_Matrix.md).
 const KIND_SINGLE := "single"
-const KIND_DUAL := "dual"
 const KIND_HOLD := "hold"
+const KIND_FIRST_CHARGE := "first_charge"
+const KIND_FLURRY := "flurry"
+const KIND_DUAL := "dual"
+const KIND_LOW_CEILING := "low_ceiling"
+const KIND_CLOSE_SECTOR := "close_sector"
+const KIND_STORM := "storm"
+const KIND_UNDERTOW := "undertow"
+const KIND_LAST_STAND := "last_stand"
 const KIND_MAW := "maw"
-const KINDS: Array[String] = [KIND_SINGLE, KIND_DUAL, KIND_HOLD, KIND_MAW]
+const KINDS: Array[String] = [KIND_SINGLE, KIND_HOLD, KIND_FIRST_CHARGE, KIND_FLURRY, KIND_DUAL, KIND_LOW_CEILING, KIND_CLOSE_SECTOR, KIND_STORM, KIND_UNDERTOW, KIND_LAST_STAND, KIND_MAW]
+
+## The three difficulty levels the cards show (EASY, MEDIUM, HARD), from the tier a city plays at.
+const LEVEL_EASY := "easy"
+const LEVEL_MEDIUM := "medium"
+const LEVEL_HARD := "hard"
+## Every level's missions (David, 2026-11-08): the first two columns of a section draw from
+## "regular", and the third column is one district, the level's finale. Intensity rises at every
+## level whatever the kind, and harder levels run longer.
+const ROSTERS := {
+	LEVEL_EASY: {"regular": [KIND_SINGLE, KIND_HOLD], "finale": KIND_FIRST_CHARGE},
+	LEVEL_MEDIUM: {"regular": [KIND_FLURRY, KIND_DUAL, KIND_LOW_CEILING], "finale": KIND_CLOSE_SECTOR},
+	LEVEL_HARD: {"regular": [KIND_FLURRY, KIND_STORM, KIND_UNDERTOW, KIND_LAST_STAND], "finale": KIND_MAW},
+}
+## How often Close the Sector is the Maw's lighter form instead of a harder Crossfire, decided per
+## section so a card never changes under the player. The card does not say which.
+const SECTOR_BOSS_ODDS := 0.4
 
 ## The ground each tear has taken, in longitude and latitude, as a fresh profile finds it: the
 ## seeded operations are already in these shapes. Nothing pushes them outward until the war has
@@ -462,11 +487,12 @@ static func resistance_label(ops: int) -> String:
 
 # --- Sections -------------------------------------------------------------------------------
 
-## One section of a city: three columns of one to three districts, every district linked to at
-## least one in the next column. Generated from the city id and section index, so the same
-## ground comes back until it is sealed. A lone district is never a Maw and a column is never
-## all Maws, so there is always a way around one.
-static func section(city_id: String, index: int) -> Dictionary:
+## One section of a city: two columns of one to three districts and a third of one, the level's
+## finale, every district linked to at least one in the next column. The layout comes from the city
+## id and section index, so the same ground comes back until it is sealed. What each district asks
+## comes from the level the city plays at (ROSTERS), seeded per level, so the same city in danger
+## always shows the same missions and the finale is always last.
+static func section(city_id: String, index: int, tier_id: String = DifficultyTier.STANDARD) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%s:%d" % [city_id, index])
 	var names := DISTRICT_NAMES.duplicate()
@@ -480,11 +506,14 @@ static func section(city_id: String, index: int) -> Dictionary:
 	var used := 0
 	for column in 3:
 		var count := rng.randi_range(1, 3)
+		# The third column is the series finale: one district.
+		if column == 2:
+			count = 1
 		var members: Array[Dictionary] = []
 		for row in count:
-			var kind: String = KINDS[rng.randi_range(0, KINDS.size() - 1)]
-			if count == 1 and kind == KIND_MAW:
-				kind = KIND_DUAL
+			# The draw that picked a kind before kinds came from the level; kept so the layout's
+			# remaining draws stay where they were.
+			rng.randi_range(0, 3)
 			var district: String = names[used % names.size()]
 			used += 1
 			members.append({
@@ -492,17 +521,10 @@ static func section(city_id: String, index: int) -> Dictionary:
 				"column": column,
 				"row": row,
 				"name": district,
-				"kind": kind,
+				"kind": "",
 				"site": site_for(district),
 				"point": Vector2(COLUMN_X[column], MAP_SIZE.y * 0.5 + (row - (count - 1) * 0.5) * ROW_STEP),
 			})
-		if count > 1:
-			var all_maw := true
-			for member in members:
-				if member["kind"] != KIND_MAW:
-					all_maw = false
-			if all_maw:
-				members[0]["kind"] = KIND_SINGLE
 		columns.append(members)
 		nodes.append_array(members)
 	var edges: Array = []
@@ -527,7 +549,34 @@ static func section(city_id: String, index: int) -> Dictionary:
 	var starts: Array[String] = []
 	for member in columns[0]:
 		starts.append(String(member["id"]))
-	return {"city_id": city_id, "index": index, "nodes": nodes, "edges": edges, "starts": starts}
+	var level := _assign_kinds(nodes, city_id, index, tier_id)
+	return {"city_id": city_id, "index": index, "level": level, "nodes": nodes, "edges": edges, "starts": starts}
+
+## Gives each district its kind from the level's roster: the regular kinds dealt from a shuffled
+## bag, so a section mixes them, and the finale in the last column. Close the Sector carries
+## "boss" when this section's finale is the Maw's lighter form. Returns the level.
+static func _assign_kinds(nodes: Array[Dictionary], city_id: String, index: int, tier_id: String) -> String:
+	var level := level_for(tier_id)
+	var roster: Dictionary = ROSTERS[level]
+	var picker := RandomNumberGenerator.new()
+	picker.seed = hash("%s:%d:%s" % [city_id, index, level])
+	var sector_boss := picker.randf() < SECTOR_BOSS_ODDS
+	var bag: Array = []
+	for node in nodes:
+		if int(node["column"]) == 2:
+			node["kind"] = String(roster["finale"])
+			if node["kind"] == KIND_CLOSE_SECTOR:
+				node["boss"] = sector_boss
+			continue
+		if bag.is_empty():
+			bag = (roster["regular"] as Array).duplicate()
+			for i in range(bag.size() - 1, 0, -1):
+				var j := picker.randi_range(0, i)
+				var swap: Variant = bag[i]
+				bag[i] = bag[j]
+				bag[j] = swap
+		node["kind"] = String(bag.pop_back())
+	return level
 
 static func node_in(section_data: Dictionary, node_id: String) -> Dictionary:
 	for node in section_data.get("nodes", []):
@@ -563,23 +612,59 @@ static func site_for(district: String) -> String:
 	return district.to_lower().replace(" ", "_")
 
 ## What the Striker does in a district, named like an operation. The kind ids stay in saved
-## records (record_key); only these words change. The words are the same at every tier: what
-## may come through a Maw stays a surprise.
+## records (record_key); only these words change. What may come through a Maw stays a surprise.
 static func kind_label(kind: String) -> String:
 	match kind:
 		KIND_SINGLE: return "CLEAN SEAL"
-		KIND_DUAL: return "CROSSFIRE"
 		KIND_HOLD: return "COVER THE TEAM"
+		KIND_FIRST_CHARGE: return "FIRST CHARGE"
+		KIND_FLURRY: return "FLURRY"
+		KIND_DUAL: return "CROSSFIRE"
+		KIND_LOW_CEILING: return "LOW CEILING"
+		KIND_CLOSE_SECTOR: return "CLOSE THE SECTOR"
+		KIND_STORM: return "STORM"
+		KIND_UNDERTOW: return "UNDERTOW"
+		KIND_LAST_STAND: return "LAST STAND"
 		KIND_MAW: return "SHUT THE MAW"
 		_: return kind.to_upper()
 
 static func kind_summary(kind: String) -> String:
 	match kind:
-		KIND_SINGLE: return "Four rifts in turn, each faster than the last. Read every tell, answer it, and shut the door."
-		KIND_DUAL: return "Two pairs of rifts, out of step in one view. Keep both doors in front of you."
+		KIND_SINGLE: return "Four rifts in turn, each a little faster. Punch everything that comes through and shut the door."
 		KIND_HOLD: return "Chen's team seals from the pylons. Keep the phantoms off you until they finish."
-		KIND_MAW: return "One vast rift, a heavy flood, and a glimpse of what holds it open. It takes a long chew to shut."
+		KIND_FIRST_CHARGE: return "Four rifts, and pinks join the fight. Punch the feed, step aside from the charges, and finish the series."
+		KIND_FLURRY: return "A fast, steady stream of yellow and blue. Keep your hands moving and block or dodge the odd one."
+		KIND_DUAL: return "Two pairs of rifts, out of step in one view, with pinks charging between them."
+		KIND_LOW_CEILING: return "Rays glide in at head height between the phantoms. Punch, then get under them."
+		KIND_CLOSE_SECTOR: return "The last district in this sector. It will not go quietly."
+		KIND_STORM: return "Pinks charge from everywhere while rays sweep low and eels skim the floor. Keep moving."
+		KIND_UNDERTOW: return "A hard, fast feed with rays to squat under and eels to jump. Punch between the moves."
+		KIND_LAST_STAND: return "Three rifts open across your front while the team seals them. Hold every side."
+		KIND_MAW: return "One vast rift, a heavy flood, and something holding it open. It takes a long chew to shut."
 		_: return ""
+
+## The level a tier's cards show: EASY for Assist and Standard, MEDIUM for Operator, HARD for Full Resonance.
+static func level_for(tier_id: String) -> String:
+	match DifficultyTier.resolve(tier_id):
+		DifficultyTier.OPERATOR: return LEVEL_MEDIUM
+		DifficultyTier.FULL_RESONANCE: return LEVEL_HARD
+		_: return LEVEL_EASY
+
+## Every kind a tier can offer, regular ones first and the finale last.
+static func kinds_for(tier_id: String) -> Array[String]:
+	var roster: Dictionary = ROSTERS[level_for(tier_id)]
+	var out: Array[String] = []
+	for kind in roster["regular"]:
+		out.append(String(kind))
+	out.append(String(roster["finale"]))
+	return out
+
+## The tier a level is built at, for the audit and medals: Standard, Operator, Full Resonance.
+static func tier_of_level(level: String) -> String:
+	match level:
+		LEVEL_MEDIUM: return DifficultyTier.OPERATOR
+		LEVEL_HARD: return DifficultyTier.FULL_RESONANCE
+		_: return DifficultyTier.STANDARD
 
 # --- Missions -------------------------------------------------------------------------------
 
@@ -622,21 +707,34 @@ const KILL_DAMAGE := 13.0
 const KILL_CADENCE_SECONDS := 2.0
 const RIFT_OPENING_SECONDS := 6.0
 ## Cover the Team: Chen's team seals the rift on its own over this long (RiftManager drains it);
-## the player's kills shorten it. With HOLD_HEALTH, a strong puncher (1.3x rift damage) still
-## takes about three minutes, an average one three and a half, and nobody waits past five.
+## the player's kills shorten it.
 const HOLD_SECONDS := 300.0
-const HOLD_HEALTH := 2500
-const POOL: Array = ["yellow", "blue", "green", "pink"]
+const HOLD_HEALTH := 2600
+## The feed every mission draws from: yellow and blue always the most frequent, green always the
+## least (David, 2026-11-08). Pinks, Rays, and Eels never come from the feed: they ride a wave's
+## extras layer (RiftManager), so they arrive between the feed's phantoms instead of replacing them.
+const POOL: Array = ["yellow", "yellow", "yellow", "yellow", "yellow", "blue", "blue", "blue", "blue", "blue", "green"]
+## Flurry's feed: the punching workout, with a green only now and then.
+const FLURRY_POOL: Array = ["yellow", "yellow", "yellow", "yellow", "yellow", "yellow", "blue", "blue", "blue", "blue", "blue", "blue", "green"]
+## Rift damage an extra does when the Striker answers it (MissionMedals.VARIANTS has the scores).
+const EXTRA_DAMAGE := {"pink": 18, "ray": 14, "eel": 14}
+## Each level's pace: phantom speed and tell length on every wave of its missions.
+const LEVEL_PACE := {
+	LEVEL_EASY: {"speed": 0.92, "tell": 1.12},
+	LEVEL_MEDIUM: {"speed": 1.1, "tell": 0.9},
+	LEVEL_HARD: {"speed": 1.2, "tell": 0.85},
+}
 
-## A playable mission for a district at a tier, in MissionCatalog's vocabulary. The round applies
-## the tier itself (RoundController.begin_round), so the waves here are at Standard. Every kind
-## runs about as long as a Breach Night operation (David, 2026-10-26: one or two rifts and the
-## mission was over in under a minute): Clean Seal and Crossfire seal four rifts, Cover the Team
-## holds one until the team shuts it, Shut the Maw is The Maw's own rift.
+## A playable mission for a district at a tier, in MissionCatalog's vocabulary. Each kind is
+## authored at its level's pace (development/Difficulty_Matrix.md); the round still passes it
+## through DifficultyTier.apply_mission, which leaves Standard, Operator, and Full Resonance as
+## authored apart from what they ask of the body, and eases Assist. Lengths rise with the level:
+## Easy about three and a half minutes, Medium five to six, Hard six to seven.
 static func build_mission(city_data: Dictionary, section_index: int, node: Dictionary, tier_id: String) -> Dictionary:
 	var kind := String(node.get("kind", KIND_SINGLE))
-	var city_name := String(city_data.get("name", "the city"))
+	var level := level_for(tier_id)
 	var district := String(node.get("name", "District"))
+	var city_name := String(city_data.get("name", "the city"))
 	var mission := {
 		"id": mission_id(String(city_data.get("id", "")), section_index, String(node.get("id", ""))),
 		"codename": "%s • %s" % [city_name.to_upper(), district.to_upper()],
@@ -652,56 +750,212 @@ static func build_mission(city_data: Dictionary, section_index: int, node: Dicti
 		"victory_line": "Chen: %s is shut. Pick the next district when you are ready." % district,
 		"defeat_line": "Chen: The failsafe fired. %s held. Rest, then go back in." % district,
 	}
+	var pace: Dictionary = LEVEL_PACE[level]
+	var speed := float(pace["speed"])
+	var tell := float(pace["tell"])
 	match kind:
-		KIND_DUAL:
-			mission["objective"] = "SEAL TWO PAIRS"
-			mission["max_concurrent"] = 2
-			mission["cluster_rifts"] = true
-			mission["start_line"] = "CHEN: %s. TWO DOORS, SAME VIEW. THEY WILL NOT SYNC." % district.to_upper()
-			mission["pressure_labels"] = ["PAIR LIVE", "PARTNER", "SECOND PAIR", "LAST DOOR"]
-			mission["open_barks"] = ["", "THE OTHER ONE IS ALREADY OPEN.", "SECOND PAIR. KEEP THEM IN FRONT.", "BOTH DOORS LIVE. STAY IN FRONT."]
-			mission["seal_lines"] = ["ONE DOWN. ITS PARTNER IS STILL FEEDING.", "PAIR SEALED. THE NEXT TWO ARE OPENING.", "THREE DOWN. ONE PARTNER LEFT."]
-			# Two pairs; the second is faster with shorter tells, as Double Breach's later pairs are.
-			mission["rifts"] = [
-				_wave(260, 3.1, 2, 1.1, 0.9, POOL),
-				_wave(260, 3.6, 2, 1.1, 0.9, ["blue", "green", "pink", "yellow"]),
-				_wave(280, 2.8, 2, 1.18, 0.82, ["green", "pink", "yellow", "blue"]),
-				_wave(280, 3.2, 2, 1.18, 0.82, ["pink", "yellow", "green", "blue"]),
-			]
 		KIND_HOLD:
 			mission["objective"] = "COVER THE TEAM"
 			mission["start_line"] = "CHEN: %s. MY TEAM IS ON THE SEAL. KEEP THEM OFF YOU." % district.to_upper()
-			mission["pressure_labels"] = ["TEAM ON THE SEAL"]
-			mission["open_barks"] = [""]
-			mission["seal_lines"] = []
-			var hold := _wave(HOLD_HEALTH, 3.2, 3, 1.0, 1.0, POOL)
+			_one_rift_lines(mission, "TEAM ON THE SEAL")
+			var hold := _wave(HOLD_HEALTH, 3.0, 3, speed, tell, POOL)
 			hold["hold_seconds"] = HOLD_SECONDS
 			mission["rifts"] = [hold]
+		KIND_FIRST_CHARGE:
+			mission["intro_event"] = "intro_pinks_join"
+			mission["start_line"] = "CHEN: %s. PINKS ARE IN THIS ONE. STEP ASIDE AND KEEP PUNCHING." % district.to_upper()
+			mission["rifts"] = [
+				_with_extras(_wave(320, 3.0, 3, 0.96, 1.06, POOL), [_extra("pink", 9.0)]),
+				_with_extras(_wave(330, 2.9, 3, 0.96, 1.06, POOL), [_extra("pink", 9.0)]),
+				_with_extras(_wave(340, 2.8, 3, 0.98, 1.04, POOL), [_extra("pink", 9.0)]),
+				_with_extras(_wave(350, 2.7, 3, 0.98, 1.04, POOL), [_extra("pink", 9.0)]),
+			]
+		KIND_FLURRY:
+			mission["intro_event"] = "intro_barrage"
+			mission["objective"] = "SEAL THREE RIFTS"
+			mission["start_line"] = "CHEN: %s. THEY ARE POURING IN. KEEP YOUR HANDS MOVING." % district.to_upper()
+			mission["pressure_labels"] = ["FLURRY", "FASTER", "LAST DOOR"]
+			mission["open_barks"] = ["", "SECOND RIFT. FASTER.", "LAST ONE. EMPTY IT."]
+			mission["seal_lines"] = ["FIRST SEAL. TWO LEFT.", "ONE LEFT. FINISH IT."]
+			if level == LEVEL_HARD:
+				var moves := [_extra("pink", 7.0, 2), _extra("ray", 20.0), _extra("eel", 24.0)]
+				mission["rifts"] = [
+					_moving(_wave(1250, 1.3, 6, speed, tell, FLURRY_POOL), moves),
+					_moving(_wave(1280, 1.25, 6, speed, tell, FLURRY_POOL), moves),
+					_moving(_wave(1310, 1.2, 6, speed, tell, FLURRY_POOL), moves),
+				]
+			else:
+				mission["rifts"] = [
+					_with_extras(_wave(800, 1.8, 4, speed, tell, FLURRY_POOL), [_extra("pink", 12.0)]),
+					_with_extras(_wave(820, 1.7, 4, speed, tell, FLURRY_POOL), [_extra("pink", 12.0)]),
+					_with_extras(_wave(840, 1.6, 5, speed, tell, FLURRY_POOL), [_extra("pink", 12.0)]),
+				]
+		KIND_DUAL:
+			_pair_lines(mission, district, "TWO DOORS, SAME VIEW. THEY WILL NOT SYNC.")
+			# Each rift of a pair carries half the pinks, so a pair sends one about every ten seconds.
+			var pinks := [_extra("pink", 20.0)]
+			mission["rifts"] = [
+				_with_extras(_wave(600, 3.2, 3, speed, tell, POOL), pinks),
+				_with_extras(_wave(600, 3.6, 3, speed, tell, POOL), pinks),
+				_with_extras(_wave(640, 3.0, 3, speed * 1.04, tell * 0.96, POOL), pinks),
+				_with_extras(_wave(640, 3.4, 3, speed * 1.04, tell * 0.96, POOL), pinks),
+			]
+		KIND_LOW_CEILING:
+			mission["intro_event"] = "intro_rays"
+			mission["start_line"] = "CHEN: %s. RAYS IN THE AIR. GET UNDER THEM." % district.to_upper()
+			var rays := [_extra("ray", 11.0), _extra("pink", 16.0)]
+			mission["rifts"] = [
+				_moving(_wave(560, 2.4, 4, speed, tell, POOL), rays),
+				_moving(_wave(580, 2.3, 4, speed, tell, POOL), rays),
+				_moving(_wave(600, 2.2, 4, speed, tell, POOL), rays),
+				_moving(_wave(620, 2.1, 4, speed, tell, POOL), rays),
+			]
+		KIND_CLOSE_SECTOR:
+			var as_boss := _close_the_sector(mission.duplicate(true), district, true)
+			var as_pairs := _close_the_sector(mission.duplicate(true), district, false)
+			# One card for both forms, so it never says which this is.
+			var boss_card := expected_minutes(_with_boss(as_boss))
+			var pairs_card := expected_minutes(as_pairs)
+			mission = as_boss if bool(node.get("boss", false)) else as_pairs
+			mission["intro_event"] = "intro_finale"
+			mission["expected_minutes"] = [mini(int(boss_card[0]), int(pairs_card[0])), maxi(int(boss_card[1]), int(pairs_card[1]))]
+		KIND_STORM:
+			mission["intro_event"] = "intro_storm"
+			mission["objective"] = "SEAL THREE RIFTS"
+			mission["start_line"] = "CHEN: %s. EVERYTHING IS MOVING. SO ARE YOU." % district.to_upper()
+			mission["pressure_labels"] = ["STORM", "STRONGER", "LAST DOOR"]
+			mission["open_barks"] = ["", "SECOND RIFT. STAY LIGHT.", "LAST ONE. KEEP MOVING."]
+			mission["seal_lines"] = ["FIRST SEAL. TWO LEFT.", "ONE LEFT. FINISH IT."]
+			var storm := [_extra("pink", 3.0, 3), _extra("ray", 10.0), _extra("eel", 12.0)]
+			mission["rifts"] = [
+				_moving(_wave(1600, 2.6, 4, speed, tell, POOL), storm),
+				_moving(_wave(1650, 2.5, 4, speed, tell, POOL), storm),
+				_moving(_wave(1700, 2.4, 4, speed, tell, POOL), storm),
+			]
+		KIND_UNDERTOW:
+			mission["intro_event"] = "intro_movers"
+			mission["start_line"] = "CHEN: %s. RAYS AND EELS. LOW, THEN HIGH." % district.to_upper()
+			var under := [_extra("ray", 11.0), _extra("eel", 13.0), _extra("pink", 10.0)]
+			mission["rifts"] = [
+				_moving(_wave(900, 1.7, 5, speed, tell, POOL), under),
+				_moving(_wave(930, 1.6, 5, speed, tell, POOL), under),
+				_moving(_wave(960, 1.6, 5, speed, tell, POOL), under),
+				_moving(_wave(990, 1.5, 5, speed, tell, POOL), under),
+			]
+		KIND_LAST_STAND:
+			mission["intro_event"] = "intro_last_stand"
+			mission["objective"] = "HOLD ALL THREE"
+			mission["start_line"] = "CHEN: %s. THREE DOORS. MY TEAM TAKES THEM. YOU HOLD." % district.to_upper()
+			mission["pressure_labels"] = ["THREE DOORS", "TWO DOORS", "LAST DOOR"]
+			mission["open_barks"] = ["", "", ""]
+			mission["seal_lines"] = ["ONE DOOR SHUT. TWO TO GO.", "LAST DOOR. HOLD IT."]
+			mission["max_concurrent"] = 3
+			# Across the front, not all the way round: a wide arc first (David, 2026-11-08).
+			mission["spread_rifts"] = [-60.0, 0.0, 60.0]
+			var stand := [_extra("pink", 15.0), _extra("ray", 36.0), _extra("eel", 42.0)]
+			var doors: Array = []
+			for i in 3:
+				var door := _moving(_wave(3000, 2.6, 2, speed, tell, POOL), stand)
+				door["hold_seconds"] = 660.0
+				doors.append(door)
+			mission["rifts"] = doors
 		KIND_MAW:
-			var maw := MissionCatalog.get_mission("the_maw")
 			mission["objective"] = "SEAL THE MAW"
 			mission["arc_rifts"] = true
 			mission["start_line"] = "CHEN: A MAW IN %s. IT DOES NOT STOP FEEDING." % district.to_upper()
-			mission["pressure_labels"] = ["THE MAW"]
-			mission["open_barks"] = [""]
-			mission["seal_lines"] = []
+			_one_rift_lines(mission, "THE MAW")
 			mission["glimpse"] = true
-			if maw.has("tier_boss"):
-				mission["tier_boss"] = (maw["tier_boss"] as Dictionary).duplicate(true)
-			mission["rifts"] = []
-			for wave in maw.get("rifts", []):
-				mission["rifts"].append((wave as Dictionary).duplicate(true))
-			# The same mission as the operation, so the same card.
-			mission["expected_minutes"] = maw.get("expected_minutes", expected_minutes(mission))
+			var boss: Dictionary = MissionCatalog.get_mission("the_maw").get("tier_boss", {})
+			if not boss.is_empty():
+				boss = boss.duplicate(true)
+				boss["anchor"] = 1100
+				boss["anchor_seconds"] = 260.0
+				boss.erase("expected_minutes")
+				mission["tier_boss"] = boss
+			mission["rifts"] = [_moving(_wave(2700, 0.65, 10, speed, tell, POOL, 2.0), [_extra("pink", 10.0, 2), _extra("ray", 18.0), _extra("eel", 22.0)])]
+			# One card for a Maw that breaks and one that holds.
+			var breaks_card := expected_minutes(_with_boss(mission))
+			var holds_card := expected_minutes(mission)
+			mission["expected_minutes"] = [mini(int(breaks_card[0]), int(holds_card[0])), maxi(int(breaks_card[1]), int(holds_card[1]))]
 		_:
-			# Four rifts in sequence, two shapes repeated and escalating, as First Light does.
-			mission["rifts"] = _repeat([
-				_wave(150, 3.4, 3, 1.0, 1.0, POOL),
-				_wave(170, 3.0, 3, 1.06, 0.94, ["blue", "green", "pink", "yellow"]),
-			], 2)
+			# Clean Seal: four rifts in sequence, each a little faster.
+			mission["rifts"] = [
+				_wave(200, 3.2, 3, speed, tell, POOL),
+				_wave(210, 3.0, 3, speed, tell, POOL),
+				_wave(210, 3.0, 3, speed, tell, POOL),
+				_wave(220, 2.8, 3, speed, tell, POOL),
+			]
 	if not mission.has("expected_minutes"):
 		mission["expected_minutes"] = expected_minutes(mission)
 	return mission
+
+## Close the Sector, the Medium finale: the Maw's lighter form (boss) or a harder Crossfire.
+static func _close_the_sector(mission: Dictionary, district: String, boss: bool) -> Dictionary:
+	var pace: Dictionary = LEVEL_PACE[LEVEL_MEDIUM]
+	var speed := float(pace["speed"])
+	var tell := float(pace["tell"])
+	if boss:
+		mission["objective"] = "CLOSE THE SECTOR"
+		mission["arc_rifts"] = true
+		mission["start_line"] = "CHEN: %s. LAST DISTRICT IN THE SECTOR. SOMETHING IS HOLDING IT OPEN." % district.to_upper()
+		_one_rift_lines(mission, "LAST DISTRICT")
+		mission["glimpse"] = true
+		mission["world"]["boss"] = true
+		# The lighter form: duck-depth sweeps, the jump pair, and the volley; no slams (Hard's,
+		# always push-ups) (MawBoss, "light"). It always comes through when this form is dealt.
+		mission["tier_boss"] = {
+			"name": "THE MAW",
+			"light": true,
+			"phase_one_scale": 0.7,
+			"anchor": 800,
+			"anchor_seconds": 180.0,
+			"squat_depth": DifficultyTier.DUCK_DEPTH,
+		}
+		mission["rifts"] = [_with_extras(_wave(1800, 1.1, 6, speed, tell, POOL, 2.0), [_extra("pink", 14.0)])]
+		return mission
+	_pair_lines(mission, district, "LAST DISTRICT IN THE SECTOR. TWO DOORS. FINISH IT.")
+	mission["objective"] = "CLOSE THE SECTOR"
+	var extras := [_extra("pink", 22.0), _extra("ray", 30.0)]
+	mission["rifts"] = [
+		_moving(_wave(770, 3.0, 3, speed * 1.05, tell * 0.95, POOL), extras),
+		_moving(_wave(770, 3.3, 3, speed * 1.05, tell * 0.95, POOL), extras),
+		_moving(_wave(810, 2.8, 3, speed * 1.08, tell * 0.92, POOL), extras),
+		_moving(_wave(810, 3.1, 3, speed * 1.08, tell * 0.92, POOL), extras),
+	]
+	return mission
+
+## The mission as its boss tier would play it, for estimating the card.
+static func _with_boss(mission: Dictionary) -> Dictionary:
+	var copy := mission.duplicate(true)
+	if copy.has("tier_boss"):
+		copy["boss"] = copy["tier_boss"]
+	return copy
+
+static func _pair_lines(mission: Dictionary, district: String, line: String) -> void:
+	mission["objective"] = "SEAL TWO PAIRS"
+	mission["max_concurrent"] = 2
+	mission["cluster_rifts"] = true
+	mission["start_line"] = "CHEN: %s. %s" % [district.to_upper(), line]
+	mission["pressure_labels"] = ["PAIR LIVE", "PARTNER", "SECOND PAIR", "LAST DOOR"]
+	mission["open_barks"] = ["", "THE OTHER ONE IS ALREADY OPEN.", "SECOND PAIR. KEEP THEM IN FRONT.", "BOTH DOORS LIVE. STAY IN FRONT."]
+	mission["seal_lines"] = ["ONE DOWN. ITS PARTNER IS STILL FEEDING.", "PAIR SEALED. THE NEXT TWO ARE OPENING.", "THREE DOWN. ONE PARTNER LEFT."]
+
+static func _one_rift_lines(mission: Dictionary, label: String) -> void:
+	mission["pressure_labels"] = [label]
+	mission["open_barks"] = [""]
+	mission["seal_lines"] = []
+
+static func _extra(id: String, every: float, most: int = 1) -> Dictionary:
+	return {"id": id, "every": every, "max": most}
+
+static func _with_extras(wave: Dictionary, extras: Array) -> Dictionary:
+	wave["extras"] = extras.duplicate(true)
+	return wave
+
+## Extras that include a Ray: the wave says a duck, and Full Resonance deepens it to a squat.
+static func _moving(wave: Dictionary, extras: Array) -> Dictionary:
+	wave["squat_depth"] = DifficultyTier.DUCK_DEPTH
+	return _with_extras(wave, extras)
 
 ## [low, high] minutes for a mission's card, from its waves as given (the tier already applied, or
 ## Standard): the low end is a clean run by a hard puncher (Phantom.POWER_MAX of KILL_DAMAGE per
@@ -777,6 +1031,7 @@ static func estimate_seconds(rifts: Array, max_concurrent: int = 1, kill_damage:
 		var health := 0.0
 		var spawn_rate := 0.0
 		var team_rate := 0.0
+		var extras_rate := 0.0
 		for wave in group:
 			var wave_health := float(wave.get("health", 0))
 			health += wave_health
@@ -784,11 +1039,32 @@ static func estimate_seconds(rifts: Array, max_concurrent: int = 1, kill_damage:
 			var hold := float(wave.get("hold_seconds", 0.0))
 			if hold > 0.0:
 				team_rate += wave_health / hold
+			extras_rate += extras_damage_rate(wave)
 		var kill_interval := maxf(1.0 / spawn_rate, KILL_CADENCE_SECONDS) if spawn_rate > 0.0 else KILL_CADENCE_SECONDS
-		var player_rate := kill_damage / (kill_interval * maxf(slack, 1.0))
+		# The extras (pinks, Rays, Eels) come on their own timers, on top of the feed's kills.
+		var player_rate := (kill_damage / kill_interval + extras_rate) / maxf(slack, 1.0)
 		seconds += health / (player_rate + team_rate) + RIFT_OPENING_SECONDS * group.size()
 		index += group_size
 	return seconds
+
+## Rift damage a second the wave's extras do when every one is answered: each arrives about once
+## in its "every". An Eel only where the tier left it in (DifficultyTier drops it without jumps).
+static func extras_damage_rate(wave: Dictionary) -> float:
+	var rate := 0.0
+	for entry in wave.get("extras", []):
+		var every := float(entry.get("every", 0.0))
+		if every > 0.0:
+			rate += float(EXTRA_DAMAGE.get(String(entry.get("id", "")), 0)) / every
+	return rate
+
+## Extras of one id a minute from a wave, or of every id when `id` is "".
+static func extras_per_minute(wave: Dictionary, id: String = "") -> float:
+	var count := 0.0
+	for entry in wave.get("extras", []):
+		var every := float(entry.get("every", 0.0))
+		if every > 0.0 and (id == "" or String(entry.get("id", "")) == id):
+			count += 60.0 / every
+	return count
 
 static func _wave(health: int, interval: float, max_live: int, speed_scale: float, telegraph_scale: float, pool: Array, scale: float = 1.0) -> Dictionary:
 	return {"health": health, "interval": interval, "max_live": max_live, "speed_scale": speed_scale, "telegraph_scale": telegraph_scale, "pool": pool, "scale": scale}

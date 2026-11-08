@@ -25,7 +25,7 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $folder = Join-Path $projectRoot 'Assets\Audio\VO\chen'
 $manifestPath = Join-Path $folder 'elevenlabs_manifest.json'
-$script = Get-Content (Join-Path $folder 'chen_lines.json') -Raw | ConvertFrom-Json
+$script = Get-Content (Join-Path $folder 'chen_lines.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $api = 'https://api.elevenlabs.io/v1'
 
 $key = $env:ELEVENLABS_API_KEY

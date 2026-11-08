@@ -31,6 +31,9 @@ var _mission: Dictionary = {}
 var _wave_cursor: int = 0
 var _cluster_rifts: bool = false
 var _arc_rifts: bool = false
+## Last Stand: each rift's bearing in degrees from the facing the mission started with.
+var _spread: Array = []
+var _spread_forward: Vector3 = Vector3.ZERO
 var _boss: MawBoss
 
 func _ready() -> void:
@@ -54,6 +57,8 @@ func start_round(mission: Dictionary = {}) -> void:
 	max_concurrent_rifts = maxi(int(mission.get("max_concurrent", 1)), 1)
 	_cluster_rifts = bool(mission.get("cluster_rifts", false))
 	_arc_rifts = bool(mission.get("arc_rifts", false))
+	_spread = mission.get("spread_rifts", [])
+	_spread_forward = Vector3.ZERO
 	if _boss:
 		_boss.prepare(mission)
 	_wave_cursor = spawned_rifts
@@ -159,6 +164,8 @@ func _find_valid_position() -> Vector3:
 	# Training: one rift, straight ahead.
 	if bool(_mission.get("rift_ahead", false)):
 		return player_position + Vector3(forward.x * 11.0, rift_height, forward.z * 11.0)
+	if not _spread.is_empty():
+		return _position_spread(player_position, forward)
 	if _arc_rifts:
 		return _position_on_arc(player_position, forward)
 	if _cluster_rifts and not rift_instances.is_empty():
@@ -180,6 +187,16 @@ func _find_valid_position() -> Vector3:
 		if valid:
 			return candidate
 	return player_position + Vector3(0.0, rift_height, -min_player_distance)
+
+## Last Stand: the doors stand at fixed bearings across the front the player faced when the first
+## one opened, so turning to face one never drags the others round behind.
+func _position_spread(player_position: Vector3, forward: Vector3) -> Vector3:
+	if _spread_forward == Vector3.ZERO:
+		_spread_forward = forward
+	var bearing := deg_to_rad(float(_spread[(spawned_rifts) % _spread.size()]))
+	var facing := _spread_forward.rotated(Vector3.UP, -bearing)
+	var distance := 12.0
+	return player_position + Vector3(facing.x * distance, rift_height, facing.z * distance)
 
 func _player_forward() -> Vector3:
 	var source: Node3D = _player

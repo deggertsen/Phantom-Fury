@@ -36,6 +36,9 @@ const TORN_SCALE_GAIN := 1.6
 const ESCORT_LOW := 1.4
 const ESCORT_HIGH := 3.4
 const ESCORT_ORBIT := 0.16
+## How many phantoms a summon calls through. Was 4; David, 2026-11-08, after the lighter form:
+## a bigger escort, so the volley is a longer run of punches. Both forms, so Hard never has less.
+const ESCORT_SUMMON := 6
 ## Anchor a possession feeds back to the boss, and anchor each push-up pulse drains.
 const POSSESSION_FEED := 20
 const PULSE_DRAIN := 12
@@ -91,7 +94,7 @@ const CYCLE := [
 ## minute is unchanged (Playtest_Log.md, 2026-10-24).
 func _build_cycle() -> Array:
 	if _cycles == 0:
-		return CYCLE.duplicate(true)
+		return _light_steps(CYCLE.duplicate(true)) if is_light() else CYCLE.duplicate(true)
 	var first_side := -1.0 if randf() < 0.5 else 1.0
 	var blocks := {
 		"sweep_a": [
@@ -123,8 +126,16 @@ func _build_cycle() -> Array:
 		{"do": "low_sweep", "tell": 1.0, "speed": 7.5, "side": -jump_side},
 		{"do": "rest", "seconds": 2.2},
 	])
+	if is_light():
+		steps = _light_steps(steps)
 	_last_order = order
 	return steps
+
+## A cycle for the lighter form: everything but the slam. David, 2026-11-08: slams belong to Hard
+## and always end in push-ups, so a slam that only pulls back would confuse; the jump pair stays so
+## the fight is more than ducks and the escort. The summon stays so the volley has an escort.
+static func _light_steps(steps: Array) -> Array:
+	return steps.filter(func(step: Dictionary) -> bool: return step.get("do", "") != "slam")
 
 ## A shuffle of the four blocks with the summon before the volley, different from last time.
 func _cycle_order() -> Array:
@@ -211,6 +222,11 @@ static func decide_break(maws_faced: int, maws_without_boss: int, roll: float, o
 		return true
 	return roll < odds
 
+## The lighter form Close the Sector deals at Operator (David, 2026-11-08): duck-depth sweeps, the
+## jump pair, the volley, and its summons. No slam: slams are Hard's, and always end in push-ups.
+func is_light() -> bool:
+	return bool(boss_config.get("light", false))
+
 ## The anchor's drain per second, so it runs dry in `seconds` with no hits and no work.
 static func drain_rate(maximum: int, seconds: float) -> float:
 	return float(maximum) / maxf(seconds, 1.0)
@@ -223,14 +239,20 @@ func prepare(mission: Dictionary) -> void:
 	glimpse = false
 	var settings := get_node_or_null("/root/GameSettings")
 	if not boss_config.is_empty():
-		var faced: int = int(settings.get("boss_maws_faced")) if settings else 0
-		var dry: int = int(settings.get("maws_without_boss")) if settings else 0
-		breaks = force_next_break or always_break or decide_break(faced, dry, randf())
-		if settings and settings.has_method("record_maw"):
-			settings.record_maw(breaks)
+		if is_light():
+			# Close the Sector deals the lighter form per section; when it is dealt it comes
+			# through, and it leaves the Full Resonance break odds alone.
+			breaks = true
+			print("MAW BOSS: light form, BREAKS")
+		else:
+			var faced: int = int(settings.get("boss_maws_faced")) if settings else 0
+			var dry: int = int(settings.get("maws_without_boss")) if settings else 0
+			breaks = force_next_break or always_break or decide_break(faced, dry, randf())
+			if settings and settings.has_method("record_maw"):
+				settings.record_maw(breaks)
+			print("MAW BOSS: %s (boss Maws faced %d, %d in a row without a boss)" % ["BREAKS" if breaks else "holds", faced, dry])
 		anchor_maximum = int(boss_config.get("anchor", anchor_maximum))
 		drain_per_second = drain_rate(anchor_maximum, float(boss_config.get("anchor_seconds", 210.0)))
-		print("MAW BOSS: %s (boss Maws faced %d, %d in a row without a boss)" % ["BREAKS" if breaks else "holds", faced, dry])
 		if breaks and _rumble_stream == null and _stream_task < 0:
 			# Built off the main thread while phase one plays, so nothing hitches.
 			_stream_task = WorkerThreadPool.add_task(_build_streams)
@@ -632,7 +654,7 @@ func _begin_fight() -> void:
 		music.boss_theme()
 	var comms := _comms()
 	if comms:
-		comms.say("boss_get_ready")
+		comms.say("boss_medium_ready" if is_light() else "boss_get_ready")
 		comms.scripted = false
 	phase_two_started.emit(String(boss_config.get("name", "THE MAW")), _rift.rift_id)
 	_steps = OPENER.duplicate(true)
@@ -871,7 +893,7 @@ func _summon_escort() -> void:
 	if _escorts.size() >= 3:
 		return
 	var fresh: Array[Node3D] = []
-	for _i in 4:
+	for _i in ESCORT_SUMMON:
 		var phantom := _rift.spawn_escort()
 		if phantom:
 			fresh.append(phantom)

@@ -91,12 +91,12 @@ While training runs, the breach site is replaced by the training chamber: a dark
 - **To advance:** both hands inside the 0.55 s window, then `tutorial_green_done`.
 - **Wrong:** one hand gets the amber guard flash and half-buzz; if the window lapses, `tutorial_green_one`. It stays paused.
 
-### Beat 8: Pink Spearfin, the lane, the dodge
+### Beat 8: Pink Spearfin, the aim, the dodge
 
-- **On screen:** a pink paints its chevron lane toward the recruit and pauses at the moment the lane locks, just before the charge. The lane stays at full strength. Tag: "CAN'T BE PUNCHED". Card: "STEP OUT OF THE LANE, OR DUCK".
+- **On screen:** a pink lines its bill up on the recruit and pauses at the moment its aim locks, just before the charge. Nothing is drawn on the floor (removed 2026-11-07). Tag: "CAN'T BE PUNCHED". Card: "STEP ASIDE, OR DUCK".
 - **Chen:** during its tell `tutorial_pink`, `tutorial_pink_lane`; once paused, the cue `tutorial_pink_move`.
-- **To advance:** the recruit's head moves more than 0.5 m from the charge line. The hologram resumes, charges down the empty lane, and resolves as a dodge: `tutorial_pink_done`.
-- **Wrong:** a punch passes through with the rejected buzz, `tutorial_pink_punch`. It stays paused until they leave the lane.
+- **To advance:** the recruit's head moves more than 0.5 m from the charge line. The hologram resumes, charges through where they stood, and resolves as a dodge: `tutorial_pink_done`.
+- **Wrong:** a punch passes through with the rejected buzz, `tutorial_pink_punch`. It stays paused until they leave its path.
 
 ### Beat 9: A possession, on purpose
 
@@ -166,7 +166,7 @@ The hands-on lesson David asked for.
 - `release_hold()` (beat 9, and pink): the phantom re-locks on the head where it is now and lunges from where it stood at commit speed, possessing unless struck.
 - The Angler's lure is placed by the director with the existing `place_sweet_spot(face)`, so beat 4 teaches the jab spot and beat 5 the hook.
 
-**Pink:** `hold_at_lane_lock()` arms the same hold, entered on the frame the telegraph finishes, before the charge. The lane stays at full strength. On release the existing dodge test resolves it once it passes its target. The director releases it when the camera is more than 0.5 m from the charge line (the fish, through its locked target, and 1.5 m past).
+**Pink:** `hold_at_lane_lock()` arms the same hold, entered on the frame the telegraph finishes, before the charge. On release the existing dodge test resolves it once it passes its target. The director releases it when the camera is more than 0.5 m from the charge line (the fish, through its locked target, and 1.5 m past).
 
 **The hologram look** is a `hologram` uniform on the creature shader (scanlines climbing through the body, a faint flicker), set on every phantom the training rift spawns, and the same treatment on the training rift's portal. It is off in every operation.
 
@@ -235,8 +235,8 @@ Every line is its own event in `Assets/Audio/VO/chen/chen_lines.json`, priority 
 | `tutorial_green_one` | Together. Both fists at the same time. / One fist isn't enough. Both at once. |
 | `tutorial_green_done` | That's the catch. |
 | `tutorial_pink` | Pink can't be punched, but their energy in our world fades quickly. Just dodge them. |
-| `tutorial_pink_lane` | That line on the floor is its charge path. |
-| `tutorial_pink_move` | Step out of the lane, or duck under it. |
+| `tutorial_pink_lane` | See where its bill points? That's where it charges. |
+| `tutorial_pink_move` | Step aside, or duck under it. |
 | `tutorial_pink_punch` | Your fists go right through it. Move. / Don't punch it. Get out of the line. |
 | `tutorial_pink_done` | Clean dodge. That still drains the rift. |
 | `tutorial_let_in` | This next one, I'm letting through. |

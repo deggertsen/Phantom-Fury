@@ -15,105 +15,105 @@
     "mission_start_first": {
       "priority": 2, "cooldown": 0, "tag": "[focused]",
       "note": "The Striker's first attempt at this breach. Watchful, a little protective.",
-      "lines": ["New ground, Striker. Watch how they move here.", "First time at this breach. Read them before you chase them.", "We haven't seen this rift before. Eyes open.", "Fresh breach. I'll call what I can."]
+      "lines": ["New ground, Striker. Watch how they move here.", "First time at this breach. Read them before you chase them.", "We haven't seen this rift before. Eyes open.", "Fresh breach. I'll call what I can.", "No readings on file here. Watch, then hit.", "Unfamiliar breach. Let them show you their pattern.", "Nobody's fought this district yet. You're first in.", "Clean slate, Striker. Learn it fast.", "This one's new to me too. Hands up.", "No data on this breach. Keep your feet under you.", "First contact here. Don't overcommit early.", "I've got nothing on this rift. Trust your hands.", "Unmapped ground. Stay patient, stay sharp.", "New breach, same rules. Color to hand.", "Unknown breach. Let them show you their patterns.", "No data on this one yet. Stay alert.", "First look at this rift. Take it steady.", "New breach, Striker. I'm watching with you."]
     },
     "mission_start_retry": {
       "priority": 2, "cooldown": 0, "tag": "[determined]",
       "note": "Last attempt at this breach ended with the failsafe firing. Steady, no blame.",
-      "lines": ["Failsafe's recharged. Let's try that again.", "You're back on your feet. This time, keep them off you.", "Same rift. You know what's coming now.", "Recovery team cleared you. Back in."]
+      "lines": ["Failsafe's recharged. Let's try that again.", "You're back on your feet. This time, keep them off you.", "Same rift. You know what's coming now.", "Recovery team cleared you. Back in.", "Fresh charge in the gauntlets. Go again.", "Shake it off. This breach is still open.", "Another try. You know their tricks now.", "Back on the line. Keep your space this time."]
     },
     "mission_start_replay": {
       "priority": 2, "cooldown": 0, "tag": "[dry]",
       "note": "The Striker has already sealed this breach. Dry, a little challenging.",
-      "lines": ["You've sealed this one before. Do it faster.", "Familiar ground. Show me a cleaner run.", "You know this breach. Let's beat your best.", "Back again? Good. Make it sharper."]
+      "lines": ["You've sealed this one before. Do it faster.", "Familiar ground. Show me a cleaner run.", "You know this breach. Let's beat your best.", "Back again? Good. Make it sharper.", "This one again? Show me something better.", "You've closed it once. Close it cleaner.", "Old breach, new chance. Beat your time.", "It opened again. Shut it faster."]
     },
     "deploy_full_resonance": {
       "priority": 2, "cooldown": 0, "tag": "[focused, serious]",
       "note": "The Striker deployed at Full Resonance, the top difficulty: squats, jumps, and push-ups. Said in the three-second countdown, before her mission line. She is reading their resonance through the gauntlets, never a heart rate. Calm, a little weighty, a safety reminder without fuss.",
-      "lines": ["Full resonance. The gauntlets draw on your whole body. Legs too.", "More power. More cost. Clear the space around you."]
+      "lines": ["Full resonance. The gauntlets draw on your whole body. Legs too.", "More power. More cost. Clear the space around you.", "Full resonance. Every muscle feeds the gauntlets.", "Top output. Clear your space and stay low.", "Maximum draw. Your legs are in this too.", "Everything you've got, Striker. Mind your space.", "Squats and jumps ahead. Clear the floor.", "No holding back here. Give yourself room."]
     },
     "rift_ahead": {
       "priority": 1, "cooldown": 6, "tag": "[alert]",
       "note": "A new rift opened in front of the Striker.",
-      "lines": ["Another rift, dead ahead.", "New rift, right in front of you.", "Rift opening ahead of you.", "Fresh rift, straight ahead."]
+      "lines": ["Another rift, dead ahead.", "New rift, right in front of you.", "Rift opening ahead of you.", "Fresh rift, straight ahead.", "Rift ahead. Eyes front.", "Front and center. New rift.", "Another one opening in front.", "Straight ahead, Striker. New rift."]
     },
-    "rift_oclock_2": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "A rift opened out of view. Give the bearing crisply.", "lines": ["New rift, your two o'clock.", "Rift opening at two o'clock.", "Contact, two o'clock. New rift.", "Two o'clock. Another rift's open."]},
-    "rift_oclock_3": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your three o'clock.", "Rift on your right. Three o'clock.", "Contact, three o'clock. New rift.", "Your right side. Rift opening."]},
-    "rift_oclock_4": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your four o'clock.", "Rift opening at four o'clock.", "Contact, four o'clock. New rift.", "Four o'clock. Another rift's open."]},
-    "rift_oclock_5": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your five o'clock.", "Rift opening at five o'clock.", "Contact, five o'clock. New rift.", "Five o'clock. Another rift's open."]},
-    "rift_oclock_6": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "Behind the Striker. A touch more urgent.", "lines": ["New rift, directly behind you.", "Rift at your six. Turn around.", "Behind you. New rift.", "Six o'clock. Check your back."]},
-    "rift_oclock_7": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your seven o'clock.", "Rift opening at seven o'clock.", "Contact, seven o'clock. New rift.", "Seven o'clock. Another rift's open."]},
-    "rift_oclock_8": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your eight o'clock.", "Rift opening at eight o'clock.", "Contact, eight o'clock. New rift.", "Eight o'clock. Another rift's open."]},
-    "rift_oclock_9": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your nine o'clock.", "Rift on your left. Nine o'clock.", "Contact, nine o'clock. New rift.", "Your left side. Rift opening."]},
-    "rift_oclock_10": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your ten o'clock.", "Rift opening at ten o'clock.", "Contact, ten o'clock. New rift.", "Ten o'clock. Another rift's open."]},
+    "rift_oclock_2": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "A rift opened out of view. Give the bearing crisply.", "lines": ["New rift, your two o'clock.", "Rift opening at two o'clock.", "Contact, two o'clock. New rift.", "Two o'clock. Another rift's open.", "Turn to your two o'clock. Rift.", "Watch your two o'clock.", "Rift's up at two o'clock.", "Two o'clock, Striker. Fresh rift."]},
+    "rift_oclock_3": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your three o'clock.", "Rift on your right. Three o'clock.", "Contact, three o'clock. New rift.", "Your right side. Rift opening.", "Rift, right side.", "Watch your right. New rift.", "Three o'clock, Striker. Fresh rift.", "Turn right. Rift at three."]},
+    "rift_oclock_4": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your four o'clock.", "Rift opening at four o'clock.", "Contact, four o'clock. New rift.", "Four o'clock. Another rift's open.", "Turn to your four o'clock. Rift.", "Watch your four o'clock.", "Rift's up at four o'clock.", "Four o'clock, Striker. Fresh rift."]},
+    "rift_oclock_5": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your five o'clock.", "Rift opening at five o'clock.", "Contact, five o'clock. New rift.", "Five o'clock. Another rift's open.", "Turn to your five o'clock. Rift.", "Watch your five o'clock.", "Rift's up at five o'clock.", "Five o'clock, Striker. Fresh rift."]},
+    "rift_oclock_6": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "Behind the Striker. A touch more urgent.", "lines": ["New rift, directly behind you.", "Rift at your six. Turn around.", "Behind you. New rift.", "Six o'clock. Check your back.", "Rift behind you. Turn.", "Watch your back. New rift.", "Six o'clock, Striker. Fresh rift.", "Spin around. Something opened behind you."]},
+    "rift_oclock_7": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your seven o'clock.", "Rift opening at seven o'clock.", "Contact, seven o'clock. New rift.", "Seven o'clock. Another rift's open.", "Turn to your seven o'clock. Rift.", "Watch your seven o'clock.", "Rift's up at seven o'clock.", "Seven o'clock, Striker. Fresh rift."]},
+    "rift_oclock_8": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your eight o'clock.", "Rift opening at eight o'clock.", "Contact, eight o'clock. New rift.", "Eight o'clock. Another rift's open.", "Turn to your eight o'clock. Rift.", "Watch your eight o'clock.", "Rift's up at eight o'clock.", "Eight o'clock, Striker. Fresh rift."]},
+    "rift_oclock_9": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your nine o'clock.", "Rift on your left. Nine o'clock.", "Contact, nine o'clock. New rift.", "Your left side. Rift opening.", "Rift, left side.", "Watch your left. New rift.", "Nine o'clock, Striker. Fresh rift.", "Turn left. Rift at nine."]},
+    "rift_oclock_10": {"priority": 2, "cooldown": 0, "tag": "[urgent]", "note": "As above.", "lines": ["New rift, your ten o'clock.", "Rift opening at ten o'clock.", "Contact, ten o'clock. New rift.", "Ten o'clock. Another rift's open.", "Turn to your ten o'clock. Rift.", "Watch your ten o'clock.", "Rift's up at ten o'clock.", "Ten o'clock, Striker. Fresh rift."]},
     "rift_weakening": {
       "priority": 1, "cooldown": 10, "tag": "[encouraging]",
       "note": "A rift just dropped to half strength. Encouraging, but don't relax.",
-      "lines": ["It's destabilizing. Keep hitting.", "Half strength. Don't let up.", "That rift is buckling. Push it.", "You're tearing it apart. Keep going.", "It's failing. Stay on it."]
+      "lines": ["It's destabilizing. Keep hitting.", "Half strength. Don't let up.", "That rift is buckling. Push it.", "You're tearing it apart. Keep going.", "It's failing. Stay on it.", "Halfway there. Keep pressing.", "It's cracking. Hit it again.", "That rift's weakening. Don't stop."]
     },
     "rift_sealed": {
       "priority": 1, "cooldown": 4, "tag": "[satisfied]",
       "note": "A rift closed and more remain. Brief satisfaction.",
-      "lines": ["Rift sealed.", "That one's closed. Good.", "Seal confirmed.", "It's shut. Next one.", "Clean seal. Keep moving."]
+      "lines": ["Rift sealed.", "That one's closed. Good.", "Seal confirmed.", "It's shut. Next one.", "Clean seal. Keep moving.", "Closed. Find the next one.", "That rift's gone.", "Sealed tight. Good work."]
     },
-    "first_yellow": {"priority": 1, "cooldown": 5, "tag": "[instructive]", "note": "First yellow Angler of the session. Teaching, quick.", "lines": ["Yellow. Left hand. Go for the lure.", "That's a yellow. Hit the lure with your left.", "Yellow means left. Aim for the light.", "Left hand on the yellows. Strike the lure."]},
-    "first_blue": {"priority": 1, "cooldown": 5, "tag": "[instructive]", "note": "First blue Angler of the session.", "lines": ["Blue. Right hand. Strike the lure.", "That's a blue. Hit the lure with your right.", "Blue means right. Aim for the light.", "Right hand on the blues. Strike the lure."]},
-    "first_green": {"priority": 1, "cooldown": 5, "tag": "[instructive]", "note": "First green Carapace of the session.", "lines": ["Green. Block it with both hands.", "Greens won't break to one hand. Use both.", "Green incoming. Both fists, block it.", "Catch the green on both hands."]},
-    "first_pink": {"priority": 2, "cooldown": 5, "tag": "[urgent]", "note": "First pink Spearfin of the session. It is about to charge.", "lines": ["Pink is locking on. Step out of its lane.", "Pink charge. Step aside.", "Watch the pink. Get out of its line.", "Pink's lining up on you. Move."]},
+    "first_yellow": {"priority": 1, "cooldown": 5, "tag": "[instructive]", "note": "First yellow Angler of the session. Teaching, quick.", "lines": ["Yellow. Left hand. Go for the lure.", "That's a yellow. Hit the lure with your left.", "Yellow means left. Aim for the light.", "Left hand on the yellows. Strike the lure.", "Yellow incoming. Left hand, hit the light.", "Yellows take your left. Find the lure.", "A yellow. Left fist, aim for the glow.", "Yellow. Your left breaks it. Hit the lure."]},
+    "first_blue": {"priority": 1, "cooldown": 5, "tag": "[instructive]", "note": "First blue Angler of the session.", "lines": ["Blue. Right hand. Strike the lure.", "That's a blue. Hit the lure with your right.", "Blue means right. Aim for the light.", "Right hand on the blues. Strike the lure.", "Blue incoming. Right hand, hit the light.", "Blues take your right. Find the lure.", "A blue. Right fist, aim for the glow.", "Blue. Your right breaks it. Hit the lure."]},
+    "first_green": {"priority": 1, "cooldown": 5, "tag": "[instructive]", "note": "First green Carapace of the session.", "lines": ["Green. Block it with both hands.", "Greens won't break to one hand. Use both.", "Green incoming. Both fists, block it.", "Catch the green on both hands.", "Green. Both fists, same moment.", "Armored green. It takes both hands.", "That's a green. Catch it with both.", "Two hands on the green. Together."]},
+    "first_pink": {"priority": 2, "cooldown": 5, "tag": "[urgent]", "note": "First pink Spearfin of the session. It is about to charge.", "lines": ["Pink is locking on. Sidestep it.", "Pink charge. Step aside.", "Watch the pink. Get out of its line.", "Pink's lining up on you. Move.", "Pink. You can't hit it. Watch its aim.", "Pink's charging. Step aside when it comes.", "Pink. Fists pass through. Dodge the bill.", "That pink's aiming at you. Ready to move."]},
     "sweep": {
       "priority": 3, "cooldown": 0, "max_wait": 0.6, "tag": "[urgent]",
       "note": "Rails of rift energy just lit at head height. A blade is about to sweep through and the Striker has about a second to squat under it. One or two sharp words, half a second at most. Dropped if she is mid-line, because a late call is worse than none.",
-      "lines": ["Low!", "Get low!", "Down!", "Under it!"]
+      "lines": ["Low!", "Get low!", "Down!", "Under it!", "Squat!", "Go low!"]
     },
     "sweep_jump": {
       "priority": 3, "cooldown": 0, "max_wait": 0.6, "tag": "[urgent]",
       "note": "Rails just lit at shin height. A tentacle is about to sweep along the floor and the Striker has about a second to jump it. One or two sharp words, half a second at most. Dropped if she is mid-line.",
-      "lines": ["Jump!", "Over it!", "Feet up!", "Jump it!"]
+      "lines": ["Jump!", "Over it!", "Feet up!", "Jump it!", "Up and over!", "Leap!"]
     },
     "sweep_jump_first": {
       "priority": 3, "cooldown": 0, "max_wait": 0.6, "tag": "[urgent]",
       "note": "The first low sweep of the mission: rails just lit at shin height. The jump call and a quick space check in one breath, under two seconds.",
-      "lines": ["It's going for your feet. Jump!", "Low one, clear space, jump!"]
+      "lines": ["It's going for your feet. Jump!", "Low one, clear space, jump!", "Feet! Clear space, jump!", "It's coming low. Jump it!", "Low sweep! Room around you, jump!", "Watch your feet. Jump now!"]
     },
     "sweep_bend": {
       "priority": 2, "cooldown": 1, "tag": "[instructive]",
       "note": "The Striker got under the sweep, but by bending at the waist or dropping their head instead of squatting. It still counted. A quick form tip, coach not critic. At most once every three sweeps.",
-      "lines": ["Bend your knees, not your waist.", "Knees, Striker. Keep your chest up.", "Sit into it. Don't bow to it.", "From the legs. Back straight."]
+      "lines": ["Bend your knees, not your waist.", "Knees, Striker. Keep your chest up.", "Sit into it. Don't bow to it.", "From the legs. Back straight.", "Squat, Striker. Don't fold over.", "Drop your hips, not your head.", "Legs do the work. Chest stays up.", "Lower with your knees next time."]
     },
     "wrong_hand": {
       "priority": 1, "cooldown": 20, "tag": "[firm]",
       "note": "The Striker hit with the wrong hand. Corrective, not scolding.",
-      "lines": ["Wrong hand. Match the color.", "Other hand, Striker.", "That one needs your other hand.", "Match the gauntlet to the color.", "Argh, other hand next time."]
+      "lines": ["Wrong hand. Match the color.", "Other hand, Striker.", "That one needs your other hand.", "Match the gauntlet to the color.", "Argh, other hand next time.", "Wrong gauntlet. Check the color.", "Switch hands on that one.", "Colors, Striker. Left for yellow, right for blue."]
     },
     "combo_rising": {
       "priority": 0, "cooldown": 25, "tag": "[approving]",
       "note": "The chain multiplier passed 2x. Approving.",
-      "lines": ["That's resonance. Keep the chain.", "Good rhythm. Don't break it.", "The field is resonating. Keep it up.", "Nice chain. Stay on it.", "That's the frequency. Hold it."]
+      "lines": ["That's resonance. Keep the chain.", "Good rhythm. Don't break it.", "The field is resonating. Keep it up.", "Nice chain. Stay on it.", "That's the frequency. Hold it.", "Good chain. Keep it flowing.", "Clean hits. The field likes that.", "That's rhythm. Stay in it."]
     },
     "combo_max": {
       "priority": 0, "cooldown": 30, "tag": "[excited]",
       "note": "The chain hit its maximum. A rare flash of excitement.",
-      "lines": ["Maximum resonance!", "Full resonance. Hold it there.", "You're peaking. Don't stop now.", "Resonance is maxed. Beautiful."]
+      "lines": ["Maximum resonance!", "Full resonance. Hold it there.", "You're peaking. Don't stop now.", "Resonance is maxed. Beautiful.", "Peak chain! Keep it there.", "Top of the scale!", "That's everything the gauntlets can give!", "Maxed out. Don't let it drop."]
     },
     "life_caution": {
       "priority": 1, "cooldown": 10, "tag": "[concerned]",
       "note": "Life force is slipping. A heads-up.",
-      "lines": ["You're taking drain. Watch your space.", "Life force dropping. Stay sharp.", "They're feeding on you. Tighten up.", "Your readings dipped. Keep them off you.", "Careful. You're losing life force."]
+      "lines": ["You're taking drain. Watch your space.", "Life force dropping. Stay sharp.", "They're feeding on you. Tighten up.", "Your readings dipped. Keep them off you.", "Careful. You're losing life force.", "Watch it. You're slipping.", "Life force dipping. Stay clear of them.", "A few too many. Keep your distance."]
     },
     "life_danger": {
       "priority": 2, "cooldown": 5, "tag": "[worried]",
       "note": "Life force is low. Concerned.",
-      "lines": ["Your readings are falling fast.", "You can't take many more of those.", "Life force is low. Defend yourself.", "You're fading, Striker. Focus.", "That's too much drain. Keep them away."]
+      "lines": ["Your readings are falling fast.", "You can't take many more of those.", "Life force is low. Defend yourself.", "You're fading, Striker. Focus.", "That's too much drain. Keep them away.", "You're low. Get them off you.", "Not much left, Striker. Careful.", "Life force is dropping hard. Defend."]
     },
     "life_critical": {
       "priority": 3, "cooldown": 12, "tag": "[shouting]",
       "note": "One more touch could end it. The only place she raises her voice.",
-      "lines": ["You're critical! Dodge, block, anything!", "Life force critical. Don't let them touch you.", "You're almost gone! Fight!", "Critical! One more and the failsafe fires!", "Failsafe's primed! Don't make it fire!"]
+      "lines": ["You're critical! Dodge, block, anything!", "Life force critical. Don't let them touch you.", "You're almost gone! Fight!", "Critical! One more and the failsafe fires!", "Failsafe's primed! Don't make it fire!", "Critical! Keep them off you!", "You're on the edge! Move!", "Nothing left! Dodge everything!"]
     },
     "possessed": {
       "priority": 2, "cooldown": 9, "tag": "[urgent]",
       "note": "A phantom just got into the Striker. Sharp.",
-      "lines": ["It's in you. Shake it off!", "Contact! Push through it.", "Drain spike. Keep moving.", "It got through. Stay up.", "You're hit. Breathe, and keep fighting."]
+      "lines": ["It's in you. Shake it off!", "Contact! Push through it.", "Drain spike. Keep moving.", "It got through. Stay up.", "You're hit. Breathe, and keep fighting.", "One got in. Keep going!", "Contact! Don't stop moving.", "It's feeding on you. Fight it off!"]
     },
     "victory": {
       "priority": 3, "cooldown": 0, "tag": "[relieved]",
@@ -123,83 +123,83 @@
     "victory_flawless": {
       "priority": 3, "cooldown": 0, "tag": "[amazed]",
       "note": "Every rift sealed and the Striker never took a single drain. Genuinely impressed, a rare warmth.",
-      "lines": ["Not a scratch on you. Remarkable.", "Zero drain. I've never seen a reading like that.", "They never touched you. Perfect run.", "Flawless, Striker. Absolutely flawless."]
+      "lines": ["Not a scratch on you. Remarkable.", "Zero drain. I've never seen a reading like that.", "They never touched you. Perfect run.", "Flawless, Striker. Absolutely flawless.", "Untouched. I'm almost speechless.", "Not one drain. That was perfect.", "Clean from start to finish. Incredible.", "Not a single hit taken. Extraordinary."]
     },
     "victory_critical": {
       "priority": 3, "cooldown": 0, "tag": "[shaky]",
       "note": "Every rift sealed with the Striker at critical life force. Relief through adrenaline.",
-      "lines": ["That was far too close. But it's sealed.", "You're barely standing, and it's closed. Get out of there.", "Sealed, with nothing left in you. Don't do that to me again.", "The failsafe was a breath from firing. Good thing we didn't need it."]
+      "lines": ["That was far too close. But it's sealed.", "You're barely standing, and it's closed. Get out of there.", "Sealed, with nothing left in you. Don't do that to me again.", "The failsafe was a breath from firing. Good thing we didn't need it.", "Sealed. Now get out before you fall over.", "You held on by a thread. It's closed.", "It's done. Breathe. That was too close.", "Closed, barely. Let the team bring you in."]
     },
     "victory_record": {
       "priority": 3, "cooldown": 0, "tag": "[proud]",
       "note": "Every rift sealed with a new personal best score on this breach. Proud, a little competitive.",
-      "lines": ["That's your best score on this breach.", "New record, Striker. Faster and harder.", "Best run yet. The numbers don't lie.", "You just beat your own record."]
+      "lines": ["That's your best score on this breach.", "New record, Striker. Faster and harder.", "Best run yet. The numbers don't lie.", "You just beat your own record.", "Personal best. I'm logging that.", "Highest score you've put up here.", "That beats everything you've done here.", "Record broken. Nicely done."]
     },
     "boss_false_seal": {
       "priority": 3, "cooldown": 0, "tag": "[relieved]",
       "note": "The Maw's health hit zero and the seal is starting, like every seal before it. She starts her usual relief and is cut off half a second in; record the whole word, the game stops it.",
-      "lines": ["That's it, it's clos—"]
+      "lines": ["That's it, it's clos—", "There. It's sealing up—", "Good, that's the last of—", "Got it. It's going down—", "That's it. Seal's taking—", "Done. It's closing now—", "There we go, it's shutting—", "And that's the seal, it's—"]
     },
     "boss_dread": {
       "priority": 3, "cooldown": 0, "tag": "[whispered, afraid]",
       "note": "The lights died and tentacles just pried the Maw open from inside. She forgets she is on comms for a second. Barely audible, then she gathers herself in the next line.",
-      "lines": ["Oh no…", "No. No, no…", "Oh god…"]
+      "lines": ["Oh no…", "No. No, no…", "Oh god…", "What… no…", "That's not… oh no.", "God, no…", "No… that can't be…", "Oh… what is that…"]
     },
     "boss_holding_open": {
       "priority": 3, "cooldown": 0, "tag": "[quiet, unsettled]",
       "note": "Silence after the false seal. The Maw tore wider instead of closing. A breath first, then quietly.",
-      "lines": ["It's not closing. Something's holding it open."]
+      "lines": ["It's not closing. Something's holding it open.", "It won't close. Something's keeping it open.", "The seal isn't taking. It's being held.", "It should be shutting. It's not.", "Something on the other side won't let go.", "It's tearing wider. That's not right.", "The readings say closed. It isn't.", "Something's pulling it open from inside."]
     },
     "boss_not_a_phantom": {
       "priority": 3, "cooldown": 0, "tag": "[quiet, afraid]",
       "note": "A tentacle has just risen over the Striker. Straight after the line above.",
-      "lines": ["Striker. That is not a phantom."]
+      "lines": ["Striker. That is not a phantom.", "Striker. Whatever that is, it's not a phantom.", "That thing… it's something else.", "Striker, that's bigger than any phantom.", "I don't know what that is. Not a phantom.", "That's not what we've been fighting.", "Striker. That one's different.", "Something else is in there, Striker."]
     },
     "boss_get_ready": {
       "priority": 3, "cooldown": 0, "tag": "[focused]",
       "note": "The boss music hits and the fight begins. She steadies herself and the Striker.",
-      "lines": ["Get ready to move."]
+      "lines": ["Get ready to move.", "Stay on your feet.", "Here it comes. Move.", "Focus. Get ready.", "Keep moving, Striker.", "Steady. Be ready for anything.", "Eyes on it. Get ready.", "Feet ready. It's coming."]
     },
     "boss_sweep": {
       "priority": 3, "cooldown": 0, "tag": "[urgent]",
       "note": "A tentacle draws back to one side for a high sweep. One word, sharp.",
-      "lines": ["Low!", "Get low!", "Under it!"]
+      "lines": ["Low!", "Get low!", "Under it!", "Down!", "Duck under!", "Squat!"]
     },
     "boss_slam": {
       "priority": 3, "cooldown": 0, "tag": "[urgent]",
       "note": "A tentacle rises overhead and a ring paints the floor around the Striker.",
-      "lines": ["Out of the ring!", "Step out!", "Move! It's coming down!"]
+      "lines": ["Out of the ring!", "Step out!", "Move! It's coming down!", "Get clear!", "Move out!", "Out, now!"]
     },
     "boss_spent": {
       "priority": 2, "cooldown": 0, "tag": "[urgent, eager]",
       "note": "The slam missed and the tentacle lies spent on the floor. Push-ups on it drain the boss. Say it plainly: the operator must know to do push-ups.",
-      "lines": ["Press your energy into the tentacle! Do some push-ups!", "It's down! Push-ups, now. Drive it in!", "Hands on the floor! Push-ups, pour it into the tentacle!", "It's down! Push-ups. Press your energy into it!", "Get on the floor. Push-ups, now!", "Push-ups! Every one drains it!"]
+      "lines": ["Press your energy into the tentacle! Do some push-ups!", "It's down! Push-ups, now. Drive it in!", "Hands on the floor! Push-ups, pour it into the tentacle!", "It's down! Push-ups. Press your energy into it!", "Get on the floor. Push-ups, now!", "Push-ups! Every one drains it!", "Push-ups, Striker! Drive it down!", "On the floor! Push-ups, go!"]
     },
     "boss_waking": {
       "priority": 3, "cooldown": 0, "tag": "[firm]",
       "note": "The spent tentacle twitches. The Striker must stand before it recoils.",
-      "lines": ["Up. It's waking."]
+      "lines": ["Up. It's waking.", "On your feet. It's moving.", "Stand up. It's stirring.", "It's twitching. Get up.", "Up, Striker. Now.", "Off the floor. It's recovering.", "Back up. It's coming round.", "Get up. Quickly."]
     },
     "boss_volley": {
       "priority": 2, "cooldown": 0, "tag": "[alert]",
       "note": "The phantoms circling the boss break formation and come one at a time.",
-      "lines": ["The escort's breaking off. Count them.", "Here they come, one at a time.", "It's throwing its escort at you."]
+      "lines": ["The escort's breaking off. Count them.", "Here they come, one at a time.", "It's throwing its escort at you.", "They're peeling off one by one.", "Escort's coming at you. One each.", "Here's its escort. Break them in turn.", "Single file. Break them as they come.", "It's sending the phantoms in."]
     },
     "boss_retreat": {
       "priority": 3, "cooldown": 0, "tag": "[breathless]",
       "note": "The anchor ran out. The tentacles pull back and the Maw closes behind them.",
-      "lines": ["It's letting go. It's pulling back!", "It can't hold on. It's going back through!"]
+      "lines": ["It's letting go. It's pulling back!", "It can't hold on. It's going back through!", "It's giving up. It's going!", "It's losing its grip!", "It's retreating! Keep going!", "The anchor's gone. It's pulling out!", "It's slipping back through!", "Look, it's sliding back!"]
     },
     "maw_glimpse": {
       "priority": 3, "cooldown": 0, "tag": "[quiet, unsettled]",
       "note": "As the Maw closed, one tentacle gripped the rim and was dragged back through. No fight; a story beat.",
-      "lines": ["Did you see that? Something bigger was holding it open."]
+      "lines": ["Did you see that? Something bigger was holding it open.", "Something just dragged that tentacle back in.", "There's more of it in there. Something bigger.", "Something on the other side took it back.", "Did you see what pulled it through?", "That tentacle didn't let go. It was taken.", "There's something larger behind that rift.", "Whatever that was, it wasn't alone."]
     },
     "tutorial_hello": {"priority": 3, "cooldown": 0, "tag": "[warm, measured]", "note": "Training, the very first thing a new recruit hears: Chen introduces herself and the war, in one unhurried breath, over comms in the RSF training chamber. Warm, a little weary, quietly determined. This is the one long speech she gives; let it breathe between sentences.", "lines": ["Recruit, this is Dr. Elara Chen, science lead for the Resonance Strike Force. Years ago, my experiments tore the first holes between our world and another. We call that day the Breach. Phantoms have poured through the rifts ever since. They feed on life force, and our weapons pass straight through them. Whole cities have gone cold, and something on the other side is aiming them. We call it the Overseer. The gauntlets on your hands are my answer. They turn your own life force into a weapon, so this fight is up close and personal. Strikers close the rifts. I'll be in your ear the whole way."]},
     "tutorial_chamber": {"priority": 3, "cooldown": 0, "tag": "[calm]", "note": "Training introduction. Reassuring: none of this is real yet.", "lines": ["This is the training chamber. All holograms. No real phantoms here."]},
     "tutorial_pause_power": {"priority": 3, "cooldown": 0, "tag": "[dry]", "note": "Training introduction. She can freeze the simulation; the real thing will not wait. A dry warning.", "lines": ["I can pause them mid-strike. Real phantoms won't wait for you."]},
     "tutorial_ring": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training, play space. Practical safety instruction.", "lines": ["Stand in the ring, and give yourself room to swing."]},
-    "tutorial_fists": {"priority": 3, "cooldown": 0, "tag": "[calm]", "note": "Training, play space. She waits for the recruit to make fists. The second take is a patient repeat.", "lines": ["Make fists when you're ready.", "Show me your fists when you're ready."]},
+    "tutorial_fists": {"priority": 3, "cooldown": 0, "tag": "[calm]", "note": "Training, play space. She waits for the recruit to make fists. The second take is a patient repeat.", "lines": ["Make fists when you're ready.", "Show me your fists when you're ready.", "Fists up when you're set, Recruit.", "Close your hands into fists. I'll wait."]},
     "tutorial_rift_open": {"priority": 3, "cooldown": 0, "tag": "[focused]", "note": "Training. She has just projected a holographic rift in front of the recruit.", "lines": ["Loading a rift. Phantoms come through these."]},
     "tutorial_paused": {"priority": 3, "cooldown": 0, "tag": "[calm]", "note": "Training. She has frozen the first phantom's hologram right in front of the recruit's face.", "lines": ["There. Paused. Take a good look at it."]},
     "tutorial_yellow_left": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. The paused yellow Angler. Each gauntlet carries a different energy signature.", "lines": ["Yellow requires your left gauntlet. Different energy signatures in each hand."]},
@@ -208,43 +208,43 @@
     "tutorial_lure_crit": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. Why the lure matters.", "lines": ["Hit the lure and you land a resonance crit. It does far more damage."]},
     "tutorial_crit_landed": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. The recruit just hit the lure. Brief approval.", "lines": ["Crit. That's the one you want.", "Right on the lure. Good."]},
     "tutorial_plain_landed": {"priority": 3, "cooldown": 0, "tag": "[encouraging]", "note": "Training. The recruit broke it but missed the lure. Encouraging, with a pointer.", "lines": ["It's down. Next time, aim for the lure.", "Good. Go for the light next time."]},
-    "tutorial_wrong_hand": {"priority": 3, "cooldown": 0, "tag": "[firm]", "note": "Training. The recruit punched with the wrong gauntlet and it shrugged it off. Corrective, never scolding.", "lines": ["Wrong gauntlet. Match the color to the hand.", "Wrong energy signature. Use the other hand."]},
-    "tutorial_strike_nudge": {"priority": 3, "cooldown": 0, "tag": "[encouraging]", "note": "Training. Nothing has landed for a while: they may be pushing slowly or punching with an open hand. Patient coaching.", "lines": ["Make a fist, and snap it through.", "Harder. Punch right through it.", "Close your fist, then swing."]},
+    "tutorial_wrong_hand": {"priority": 3, "cooldown": 0, "tag": "[firm]", "note": "Training. The recruit punched with the wrong gauntlet and it shrugged it off. Corrective, never scolding.", "lines": ["Wrong gauntlet. Match the color to the hand.", "Wrong energy signature. Use the other hand.", "It shrugged that off. Try your other hand.", "Other gauntlet, Recruit. Yellow left, blue right."]},
+    "tutorial_strike_nudge": {"priority": 3, "cooldown": 0, "tag": "[encouraging]", "note": "Training. Nothing has landed for a while: they may be pushing slowly or punching with an open hand. Patient coaching.", "lines": ["Make a fist, and snap it through.", "Harder. Punch right through it.", "Close your fist, then swing.", "Fist closed, and drive straight through it.", "Don't push it, Recruit. Punch it."]},
     "tutorial_blue_right": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. A paused blue Angler.", "lines": ["Blue requires your right gauntlet."]},
     "tutorial_hook": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. This lure hangs out to the side, so it wants a hook.", "lines": ["This lure hangs out to the side. Hook it."]},
     "tutorial_chain": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. Introducing the chain multiplier.", "lines": ["Every clean hit builds your chain."]},
     "tutorial_chain_live": {"priority": 3, "cooldown": 0, "tag": "[focused]", "note": "Training. The first phantoms she does not pause. Three are coming.", "lines": ["Now I'll run them live. Three clean hits in a row."]},
-    "tutorial_chain_broke": {"priority": 3, "cooldown": 0, "tag": "[dry]", "note": "Training. The chain broke. Unbothered; try again.", "lines": ["Chain's broken. Again.", "That breaks the chain. Start over."]},
+    "tutorial_chain_broke": {"priority": 3, "cooldown": 0, "tag": "[dry]", "note": "Training. The chain broke. Unbothered; try again.", "lines": ["Chain's broken. Again.", "That breaks the chain. Start over.", "Missed one. Chain resets. Go again.", "Chain's gone. Three clean, from the top."]},
     "tutorial_chain_done": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. Three in a row landed.", "lines": ["That's a chain. It multiplies your score."]},
     "tutorial_chain_enough": {"priority": 3, "cooldown": 0, "tag": "[warm]", "note": "Training. Three tries without the full chain; she moves on kindly.", "lines": ["Close enough. You'll build it out there."]},
     "tutorial_green": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. A paused green Carapace, a heavy armored crab.", "lines": ["Green is armored. You need energy from both gauntlets to crack it."]},
     "tutorial_green_both": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. Both fists at the same moment, like catching it.", "lines": ["Use both fists, together. Catch it."]},
-    "tutorial_green_one": {"priority": 3, "cooldown": 0, "tag": "[firm]", "note": "Training. Only one fist arrived. Corrective, patient.", "lines": ["Together. Both fists at the same time.", "One fist isn't enough. Both at once."]},
+    "tutorial_green_one": {"priority": 3, "cooldown": 0, "tag": "[firm]", "note": "Training. Only one fist arrived. Corrective, patient.", "lines": ["Together. Both fists at the same time.", "One fist isn't enough. Both at once.", "Both hands, Recruit. Same instant.", "It needs both gauntlets at once. Again."]},
     "tutorial_green_done": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. The two-fist catch landed.", "lines": ["That's the catch."]},
     "tutorial_pink": {"priority": 3, "cooldown": 0, "tag": "[focused]", "note": "Training. A paused pink Spearfin. It cannot be fought, but it burns out fast in our world, so dodging is enough.", "lines": ["Pink can't be punched, but their energy in our world fades quickly. Just dodge them."]},
-    "tutorial_pink_lane": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. The glowing lane on the floor is where it will charge.", "lines": ["That line on the floor is its charge path."]},
-    "tutorial_pink_move": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. How to beat it: leave the lane.", "lines": ["Step out of the lane, or duck under it."]},
-    "tutorial_pink_punch": {"priority": 3, "cooldown": 0, "tag": "[firm]", "note": "Training. The recruit punched the pink; it passed straight through.", "lines": ["Your fists go right through it. Move.", "Don't punch it. Get out of the line."]},
-    "tutorial_pink_done": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. It charged past an empty lane.", "lines": ["Clean dodge. That still drains the rift."]},
+    "tutorial_pink_lane": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. The bill points where it will charge, straight through where the recruit stands.", "lines": ["See where its bill points? That's where it charges."]},
+    "tutorial_pink_move": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. How to beat it: get out of its path.", "lines": ["Step aside, or duck under it.", "Step aside, or get under its charge.", "Don't stay where it's aiming. Move."]},
+    "tutorial_pink_punch": {"priority": 3, "cooldown": 0, "tag": "[firm]", "note": "Training. The recruit punched the pink; it passed straight through.", "lines": ["Your fists go right through it. Move.", "Don't punch it. Get out of its way.", "Fists won't touch a pink. Dodge it.", "You can't hit it, Recruit. Get clear of its aim."]},
+    "tutorial_pink_done": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. It charged through where the recruit had been.", "lines": ["Clean dodge. That still drains the rift."]},
     "tutorial_let_in": {"priority": 3, "cooldown": 0, "tag": "[calm]", "note": "Training. She is about to let a phantom hit the recruit on purpose.", "lines": ["This next one, I'm letting through."]},
     "tutorial_hands_down": {"priority": 3, "cooldown": 0, "tag": "[calm]", "note": "Training. Reassuring: it is simulated, so lower the fists.", "lines": ["Hands down. The gauntlets will simulate the hit."]},
     "tutorial_possessed": {"priority": 3, "cooldown": 0, "tag": "[serious]", "note": "Training. The phantom just went into the recruit; their vision lurched. Serious, steady.", "lines": ["That's a possession. It fed on your life force."]},
     "tutorial_glove_check": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. She wants the recruit to raise their left hand and look at the display on the left glove, where life force is shown.", "lines": ["Look at your left glove. That's your life force."]},
-    "tutorial_glove_nudge": {"priority": 3, "cooldown": 0, "tag": "[patient]", "note": "Training. They have not looked yet. Patient.", "lines": ["Raise your left hand and look at the glove."]},
+    "tutorial_glove_nudge": {"priority": 3, "cooldown": 0, "tag": "[patient]", "note": "Training. They have not looked yet. Patient.", "lines": ["Raise your left hand and look at the glove.", "Left hand up, Recruit. Check the glove.", "Lift your left wrist. Look at the display."]},
     "tutorial_glove_seen": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. They are looking at the glove display now.", "lines": ["That's it. Check it whenever you can in a fight."]},
     "tutorial_recover": {"priority": 3, "cooldown": 0, "tag": "[calm]", "note": "Training. How life force recovers.", "lines": ["Stay clear for three seconds, and it climbs back."]},
     "tutorial_failsafe": {"priority": 3, "cooldown": 0, "tag": "[serious]", "note": "Training. What happens at zero: the gauntlets' failsafe fires and the recovery team pulls them out. Matter of fact.", "lines": ["If it hits zero, the failsafe fires and we pull you out."]},
-    "tutorial_let_in_again": {"priority": 3, "cooldown": 0, "tag": "[dry]", "note": "Training. They punched the one she was letting through. Amused, a little firm.", "lines": ["Good instinct. Hands down this time.", "I said let it in. Hands down."]},
+    "tutorial_let_in_again": {"priority": 3, "cooldown": 0, "tag": "[dry]", "note": "Training. They punched the one she was letting through. Amused, a little firm.", "lines": ["Good instinct. Hands down this time.", "I said let it in. Hands down.", "Hands down, Recruit. Let this one reach you.", "Don't block it. I need it to land."]},
     "tutorial_watch_glove": {"priority": 3, "cooldown": 0, "tag": "[dry]", "note": "Training. They punched it again. She gives up and simulates the drain herself.", "lines": ["Fine. I'll simulate it myself. Watch your left glove."]},
     "tutorial_rift_damage": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. How rifts are beaten.", "lines": ["Every phantom you break drains the rift."]},
     "tutorial_rift_glove": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. The rift's strength shows on the left glove display, under life force.", "lines": ["Its strength is on your left glove too, under your life force."]},
     "tutorial_seal": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. An empty rift seals.", "lines": ["Drain it completely, and the rift seals."]},
     "tutorial_stragglers": {"priority": 3, "cooldown": 0, "tag": "[serious]", "note": "Training. Sealing a rift does not stop the phantoms already out.", "lines": ["But whatever's already come through still comes for you."]},
     "tutorial_power_intro": {"priority": 3, "cooldown": 0, "tag": "[focused]", "note": "Training. Setting up the lesson on punch power.", "lines": ["How hard you hit matters."]},
-    "tutorial_power_soft": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. She wants a deliberately light tap on this one.", "lines": ["Tap this one. Lightly."]},
-    "tutorial_power_lighter": {"priority": 3, "cooldown": 0, "tag": "[dry]", "note": "Training. They hit the tap too hard. Dry.", "lines": ["Lighter than that. Just a tap."]},
-    "tutorial_power_hard": {"priority": 3, "cooldown": 0, "tag": "[intense]", "note": "Training. Now a full-power punch. A little fire in it.", "lines": ["Now hit it like you mean it."]},
-    "tutorial_power_again": {"priority": 3, "cooldown": 0, "tag": "[intense]", "note": "Training. The hard hit was not harder than the tap. Push them.", "lines": ["Harder than that. Again.", "Put your whole body into it."]},
+    "tutorial_power_soft": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. She wants a deliberately light tap on this one.", "lines": ["Tap this one. Lightly.", "Gently on this one. A light touch.", "Soft hit here. Just tap it."]},
+    "tutorial_power_lighter": {"priority": 3, "cooldown": 0, "tag": "[dry]", "note": "Training. They hit the tap too hard. Dry.", "lines": ["Lighter than that. Just a tap.", "Too hard. Softer this time.", "Ease off, Recruit. Just a touch."]},
+    "tutorial_power_hard": {"priority": 3, "cooldown": 0, "tag": "[intense]", "note": "Training. Now a full-power punch. A little fire in it.", "lines": ["Now hit it like you mean it.", "Full power this time. Hit it hard.", "Now put everything behind it."]},
+    "tutorial_power_again": {"priority": 3, "cooldown": 0, "tag": "[intense]", "note": "Training. The hard hit was not harder than the tap. Push them.", "lines": ["Harder than that. Again.", "Put your whole body into it.", "More than that, Recruit. Hit harder.", "Drive it from your legs. Again."]},
     "tutorial_power_seen": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. The numbers showed the hard hit drained more.", "lines": ["See the difference? Harder hits drain the rift faster."]},
     "tutorial_power_lure": {"priority": 3, "cooldown": 0, "tag": "[dry]", "note": "Training. The lure crit is worth even more than raw power.", "lines": ["And a lure hit beats them all."]},
     "tutorial_live": {"priority": 3, "cooldown": 0, "tag": "[focused]", "note": "Training. She lets the whole simulation run live for the first time.", "lines": ["Unpausing everything. Seal that rift, recruit."]},
@@ -257,7 +257,97 @@
     "defeat": {
       "priority": 3, "cooldown": 0, "tag": "[urgent]",
       "note": "Life force collapsed. The gauntlets' failsafe has just dumped its charge, throwing the phantoms off and knocking the Striker out, and Chen is sending in the recovery team from the pylon line. Urgent, then steady.",
-      "lines": ["Failsafe's firing! Recovery team, go!", "Gauntlets are dumping. Hold on, we're coming for you.", "Failsafe triggered. Get the Striker out of there!", "You're down. Recovery team, move!", "Failsafe burst. They're off you. Pulling you clear."]
+      "lines": ["Failsafe's firing! Recovery team, go!", "Gauntlets are dumping. Hold on, we're coming for you.", "Failsafe triggered. Get the Striker out of there!", "You're down. Recovery team, move!", "Failsafe burst. They're off you. Pulling you clear.", "Failsafe's fired! Team, go get them!", "You're out. We've got you, Striker.", "Charge dumped. Recovery team's on the way."]
+    },
+    "first_ray": {
+      "priority": 2, "cooldown": 5, "tag": "[alert]",
+      "note": "First Ray of the session: a wide manta gliding in at head height, too wide to step around. It cannot be punched; the Striker gets under it. Teaching, quick.",
+      "lines": ["Ray incoming. Too wide to dodge. Get under.", "That's a ray. Fists won't touch it. Duck.", "Wide one, head height. Go under it.", "Ray. You can't punch it. Get low.", "That wingspan's too wide. Under, Striker.", "Manta at head height. Drop under it."]
+    },
+    "ray_call": {
+      "priority": 3, "cooldown": 0, "max_wait": 0.6, "tag": "[urgent]",
+      "note": "A Ray is gliding in at duck height. The Striker has about a second to get their head under it. One to three sharp words, half a second at most. Dropped if she is mid-line.",
+      "lines": ["Ray! Duck!", "Duck under it!", "Heads down!", "Ray, get under!", "Ray incoming, duck!", "Under the ray!", "Head down!", "Ray! Down!"]
+    },
+    "ray_call_low": {
+      "priority": 3, "cooldown": 0, "max_wait": 0.6, "tag": "[urgent]",
+      "note": "A Ray is coming in low enough that only a full squat clears it. One to three sharp words, half a second at most. Dropped if she is mid-line.",
+      "lines": ["Ray, all the way down!", "Squat! Low ray!", "Deep! Squat!", "Lower! Squat!", "Ray, squat low!", "All the way down!", "Full squat!", "Low ray! Drop!"]
+    },
+    "ray_clipped": {
+      "priority": 1, "cooldown": 6, "tag": "[instructive]",
+      "note": "A Ray caught the Striker on the way past. Corrective, never scolding: get lower next time.",
+      "lines": ["It clipped you. Get lower.", "Lower next time. Bend those knees.", "Caught your head. Drop further.", "Lower, Striker. Rays fly flat.", "That ray grazed you. Deeper squat.", "Get under sooner. Sink lower."]
+    },
+    "first_eel": {
+      "priority": 2, "cooldown": 5, "tag": "[alert]",
+      "note": "First Eel of the session: a long eel skimming across the floor, straight through the Striker's feet. They jump it. Teaching, quick.",
+      "lines": ["Eel on the floor. Jump it.", "That's an eel. It's after your feet. Jump.", "Long one, floor level. Get over it.", "Eel coming low. Feet up as it passes.", "Eels skim the floor. Clear space, then jump.", "Watch the floor. Eel. Jump it."]
+    },
+    "eel_call": {
+      "priority": 3, "cooldown": 0, "max_wait": 0.6, "tag": "[urgent]",
+      "note": "An Eel is about to skim through the Striker's feet. One to three sharp words, half a second at most. Dropped if she is mid-line.",
+      "lines": ["Eel! Jump!", "Hop over it!", "Eel, feet up!", "Jump the eel!", "Up! Eel!", "Clear it!", "Eel! Over it!", "Jump, now!"]
+    },
+    "eel_clipped": {
+      "priority": 1, "cooldown": 6, "tag": "[instructive]",
+      "note": "An Eel caught the Striker's feet. Corrective, never scolding: jump in time, and higher.",
+      "lines": ["It caught your feet. Jump earlier.", "Clipped your feet. Higher next time.", "Get your feet up sooner.", "It tagged your feet. Time the jump.", "Lift your knees. Clear it fully.", "Jump as it reaches you, not after."]
+    },
+    "pink_call": {
+      "priority": 2, "cooldown": 6, "max_wait": 1.0, "tag": "[alert]",
+      "note": "A pink Spearfin is lining up its charge while the Striker is busy punching. A short heads-up, two to four words. Dropped if late.",
+      "lines": ["Pink lining up.", "Pink's taking aim.", "Watch the pink.", "Pink's on you.", "Pink, charge coming.", "Bill's pointed at you.", "Pink. Be ready.", "Eyes on that pink."]
+    },
+    "intro_barrage": {
+      "priority": 2, "cooldown": 0, "tag": "[focused]",
+      "note": "Straight after the mission's opening line. This fight is a steady, quick stream of yellows and blues: a punching workout, with the odd block or dodge. Brisk.",
+      "lines": ["Yellows and blues, fast and steady. Keep swinging.", "This one's a barrage. Keep those hands working.", "Steady stream coming. Punch, punch, punch.", "Mostly lures in this one. Left and right, nonstop.", "They're coming quick. Find a rhythm and keep it.", "Hands up, and keep them busy.", "A heavy wave. Match colors and keep punching.", "Fast and constant. Watch for the odd green."]
+    },
+    "intro_storm": {
+      "priority": 2, "cooldown": 0, "tag": "[alert]",
+      "note": "Straight after the mission's opening line. Pinks, rays, and eels everywhere: dodging all over. Alert, a little wry.",
+      "lines": ["Everything that dodges is out there. Stay mobile.", "Pinks, rays, eels. Keep moving.", "This one's a storm. Duck, jump, step aside.", "It's chaos in there. Read each one fast.", "Lots of movement. Keep your feet light.", "They'll come high, low, and straight at you.", "Dodging fight. Don't plant your feet.", "Rays overhead, eels underfoot. Stay sharp."]
+    },
+    "intro_last_stand": {
+      "priority": 2, "cooldown": 0, "tag": "[intense]",
+      "note": "Straight after the mission's opening line. They come from all sides and the Striker holds the ground while the team works. Intense, quietly urgent.",
+      "lines": ["They're coming from every side. Hold this ground.", "Hold the line while the team works. Don't break.", "No retreat on this one. Keep them off us.", "Every direction, Striker. Turn and fight.", "The team needs time. Buy it for them.", "Surrounded. Keep turning. Keep swinging.", "Hold out. We're working as fast as we can.", "Watch all sides. Nothing gets past you."]
+    },
+    "intro_rays": {
+      "priority": 2, "cooldown": 0, "tag": "[alert]",
+      "note": "Straight after the mission's opening line. Rays are mixed into this fight; stay ready to duck.",
+      "lines": ["Rays mixed in this time. Stay ready to duck.", "Watch overhead. Rays in this fight.", "Rays in the mix. Keep your knees loose.", "Expect rays. When they come, get under.", "Some rays with this lot. Be ready to drop.", "I'm reading rays. Don't stand too tall.", "Rays in here. Duck when I call it.", "Punch high, duck low. Rays are out."]
+    },
+    "intro_movers": {
+      "priority": 2, "cooldown": 0, "tag": "[alert]",
+      "note": "Straight after the mission's opening line. Rays and eels both in this fight: duck the one, jump the other. Stay light on your feet.",
+      "lines": ["Rays above you, eels below. Stay light.", "High and low threats. Keep on your toes.", "Duck the rays, jump the eels.", "Stay springy. Rays above, eels below.", "Both kinds of movers here. Feet ready.", "Don't lock your knees. You'll need them.", "Everything moves in this one. Stay loose.", "Expect to duck and jump. Clear your space."]
+    },
+    "intro_pinks_join": {
+      "priority": 2, "cooldown": 0, "tag": "[alert]",
+      "note": "Straight after the mission's opening line, at the finale of an easier series: pinks join in for the first time in this series. A heads-up, not a lesson.",
+      "lines": ["Pinks are joining in. Watch their aim.", "New trouble: pinks. Step aside when they charge.", "Pinks in this one. You can't punch them.", "First pinks of this run. Dodge, don't swing.", "Pinks are in the mix now. Stay alert.", "Watch for pinks. When they line up, move."]
+    },
+    "intro_finale": {
+      "priority": 2, "cooldown": 0, "tag": "[determined]",
+      "note": "Straight after the mission's opening line. The last district in this group of three. Finish the job. Determined, a little weight.",
+      "lines": ["Last district in this stretch. Finish it.", "This is the third. Close it out.", "One more district, and this sector's clear.", "Final one of the three. Make it count.", "Two down. This one finishes the job.", "Last stop here. Seal it and we move on.", "The final district. Give it everything.", "End of this run of three. Finish strong."]
+    },
+    "deploy_medium": {
+      "priority": 2, "cooldown": 0, "tag": "[focused]",
+      "note": "Said in the countdown at the middle difficulty, before her mission line. The phantoms are faster here and rays may make the Striker duck. Calm, practical.",
+      "lines": ["They're faster here. Keep your knees ready.", "Quicker phantoms. Rays may make you duck.", "Expect speed, and maybe a ray or two.", "Faster tempo. Leave room to duck.", "Step up in pace. Watch overhead.", "They move faster here. Stay loose."]
+    },
+    "deploy_hard_moves": {
+      "priority": 2, "cooldown": 0, "tag": "[focused, serious]",
+      "note": "Said in the countdown at the hard difficulty, before her mission line. Squats and jumps in every fight, so clear the space. A safety reminder without fuss.",
+      "lines": ["Squats and jumps every fight. Clear your space.", "Low and high in every fight. Make room.", "Your legs will work here. Clear the floor.", "Squatting and jumping every fight. Space check.", "You'll be jumping. Clear anything you'd trip on.", "Harder ground. Duck deep, jump clean, keep clear."]
+    },
+    "boss_medium_ready": {
+      "priority": 3, "cooldown": 0, "tag": "[focused, serious]",
+      "note": "The lighter boss fight begins: a tentacle reaches through the rift, sweeping at head height. It never slams at this level. Weighty, but steadier and less dread than the Full Resonance entrance.",
+      "lines": ["Something big's holding this rift. Stay ready.", "That's a tentacle. Watch it, and keep moving.", "It's reaching through. Stay out from under it.", "We've got something heavy. Keep your footing.", "Anchored in there. Dodge it, break the rest."]
     }
   }
 }

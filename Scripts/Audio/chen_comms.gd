@@ -76,6 +76,11 @@ var _scan_left: float = 0.0
 ## Sweeps lit since her last bend correction; -1 until she has made one this mission.
 var _sweeps_since_bend_call: int = -1
 var _jump_called: bool = false
+## A Ray or an Eel just caught the Striker: her next contact line coaches the move instead.
+var _clipped_by: String = ""
+## When she last warned of a pink from the extras layer. Pinks come often; she calls a few.
+var _last_pink_call: float = -INF
+const PINK_CALL_GAP := 20.0
 
 func _ready() -> void:
 	add_to_group("ChenComms")
@@ -154,15 +159,28 @@ func _can_still_start(entry: Dictionary) -> bool:
 		return _earliest_start(entry) - float(entry["at"]) <= own_wait
 	return entry["priority"] >= 3 or _earliest_start(entry) - float(entry["at"]) <= _max_wait
 
+## A take at random, never the one this moment played last. Recorded takes go first: a line still
+## waiting for its recording is only picked when none of the moment's lines has one, so new
+## lines in the script join the rotation as their clips land instead of playing as silent captions.
+func _pick_take(event: String, count: int) -> int:
+	var recorded: Array[int] = []
+	for i in count:
+		if _streams.has("%s_%d" % [event, i + 1]):
+			recorded.append(i)
+	var pool: Array[int] = recorded
+	if pool.is_empty():
+		for i in count:
+			pool.append(i)
+	var last := int(_last_take.get(event, -1))
+	if pool.size() > 1:
+		pool.erase(last)
+	return pool[randi() % pool.size()]
+
 func _play(event: String) -> void:
 	var lines: Array = _events[event].get("lines", [])
 	if lines.is_empty():
 		return
-	var take := 0
-	if lines.size() > 1:
-		take = randi() % (lines.size() - 1)
-		if take >= int(_last_take.get(event, -1)):
-			take += 1
+	var take := _pick_take(event, lines.size())
 	_last_take[event] = take
 	_playing_event = event
 	if event.begins_with("first_"):
@@ -247,6 +265,16 @@ func _on_node_added(node: Node) -> void:
 	if sweep:
 		sweep.telegraph_started.connect(_on_sweep_lit.bind(sweep))
 		sweep.resolved.connect(_on_sweep_resolved)
+		if sweep is SweepCreature:
+			sweep.player_contact.connect(_on_creature_contact.bind(String(sweep.variant_id)))
+		return
+	# A pink from the extras layer: a heads-up now and then, while the Striker is busy punching.
+	if not _training and node.get_meta("extra", "") == "pink" and _clock - _last_pink_call >= PINK_CALL_GAP:
+		_last_pink_call = _clock
+		say("pink_call")
+
+func _on_creature_contact(_damage: float, variant: String) -> void:
+	_clipped_by = variant
 
 func _watch_round(delta: float) -> void:
 	if _round == null:
@@ -273,6 +301,8 @@ func _begin_mission() -> void:
 		_queue.clear()
 	_jump_called = false
 	_rifts_this_mission = 0
+	_clipped_by = ""
+	_last_pink_call = -INF
 	_weakened.clear()
 	_last_multiplier = 1.0
 	_life_level = 0
@@ -286,6 +316,10 @@ func _begin_mission() -> void:
 	# A district keeps its records per city and kind, not per district.
 	_best_before = settings.best_score(WorldMap.record_id_for(_round.current_mission()), _round.current_tier()) if settings else 0
 	say(_mission_start_event(cleared))
+	# Then what this mission is about, for the kinds that have their own words (WorldMap.build_mission).
+	var intro := String(_round.current_mission().get("intro_event", ""))
+	if intro != "":
+		say(intro)
 
 ## In the countdown, a difficulty that asks more of the body gets its own line before the mission's:
 ## at Full Resonance, that the gauntlets draw on the legs too, and to clear the space.
@@ -341,6 +375,13 @@ func _on_strike_rejected(reason: StringName) -> void:
 		say("wrong_hand")
 
 func _on_sweep_lit(sweep: ResonanceSweep) -> void:
+	# The Ray and the Eel get their own short calls, timed like the sweep's.
+	if sweep is EelPhantom:
+		say("eel_call")
+		return
+	if sweep is RayPhantom:
+		say("ray_call_low" if sweep.squat_depth >= DifficultyTier.SQUAT_DEPTH - 0.001 else "ray_call")
+		return
 	if is_instance_valid(sweep) and sweep.low:
 		# A low sweep is jumped. The first one in a mission comes with the space check.
 		say("sweep_jump" if _jump_called else "sweep_jump_first")
@@ -381,7 +422,11 @@ func _on_life_state_changed(state: StringName) -> void:
 
 func _on_damage_applied(_amount: float, _current: float) -> void:
 	_took_damage = true
-	if _life_level < 3:
+	var clipped := _clipped_by
+	_clipped_by = ""
+	if clipped != "" and _events.has(clipped + "_clipped"):
+		say(clipped + "_clipped")
+	elif _life_level < 3:
 		say("possessed")
 
 ## Victory lines react to how it went: untouched, at critical, a new best, or simply sealed.

@@ -53,9 +53,25 @@ static func drifter() -> ArrayMesh:
 		_cache["drifter"] = _build_drifter()
 	return _cache["drifter"]
 
+## The Ray (orange). A wide manta that glides in at head height, too wide to step around, so the
+## Striker goes under it. Wings span local X and flap; a thin tail trails behind.
+static func ray() -> ArrayMesh:
+	if not _cache.has("ray"):
+		_cache["ray"] = _build_ray()
+	return _cache["ray"]
+
+## The Eel (white). A long eel, built head first along +Z like the Ribbon Spearfin; EelPhantom turns
+## it broadside, so its sway reads as the body rippling across the floor toward the Striker.
+static func eel() -> ArrayMesh:
+	if not _cache.has("eel"):
+		_cache["eel"] = _build_eel()
+	return _cache["eel"]
+
 ## Builds every shape up front, so the first spawn of each kind does not hitch on Quest.
 static func prewarm() -> void:
 	drifter()
+	ray()
+	eel()
 	for form in FORMS:
 		carapace(form)
 		spearfin(form)
@@ -217,6 +233,47 @@ static func _build_spearfin(form: int) -> ArrayMesh:
 			b._tail(0.3, -0.45, Vector3(0.0, -0.52, 0.06))
 			b._spear_pectorals(0.16, 0.07)
 			b._spear_eyes(0.055, 0.2, 0.29)
+	return b._commit()
+
+static func _build_ray() -> ArrayMesh:
+	var b := CreatureMesh.new()
+	# The body: a flat, slightly long disc.
+	b.style({"solid": 0.35, "glow": 0.16})
+	b.lathe(_sphere(0.24, 8), 18, Transform3D.IDENTITY, Vector3(1.0, 0.22, 1.25))
+	# The wings: wide, swept fins in the horizontal plane. They flap harder toward the tips.
+	b.style({"solid": 0.25, "glow": 0.14, "fade_u": Vector2(0.35, 1.25), "flap_axis": Vector3.RIGHT, "flap_abs": true, "flap_root": 0.14, "flap_amp": 0.32})
+	for s in [-1.0, 1.0]:
+		b.fan(0.78, -0.55, 0.95, 9, _mirror(s, Vector3(PI * 0.5, 0.0, 0.0), Vector3(s * 0.12, 0.0, 0.04)))
+	# Two horn fins out front, and the tail behind.
+	b.style({"solid": 0.6, "glow": 0.3, "fade_u": Vector2(0.4, 1.2)})
+	for s in [-1.0, 1.0]:
+		b.tube([Vector3(s * 0.1, 0.0, 0.24), Vector3(s * 0.13, 0.01, 0.36), Vector3(s * 0.1, -0.01, 0.44)], 0.025, 0.008, 5, 6)
+	b.style({"solid": 0.5, "glow": 0.2, "fade_u": Vector2(0.2, 1.0), "sway_u": 0.08})
+	b.tube([Vector3(0.0, 0.0, -0.26), Vector3(0.0, 0.01, -0.6), Vector3(0.0, 0.02, -0.95), Vector3(0.0, 0.0, -1.2)], 0.022, 0.004, 4, 10)
+	# Eyes on the leading edge, and a hot core under the body where it would strike.
+	b.style({"solid": 1.0, "glow": 1.0})
+	for s in [-1.0, 1.0]:
+		b.lathe(_sphere(0.022, 4), 6, _turn(Vector3.ZERO, Vector3(s * 0.12, 0.04, 0.24)))
+	b.lathe(_sphere(0.05, 5), 8, _turn(Vector3.ZERO, Vector3(0.0, -0.03, 0.02)))
+	return b._commit()
+
+static func _build_eel() -> ArrayMesh:
+	var b := CreatureMesh.new()
+	var along_z := _turn(Vector3(PI * 0.5, 0.0, 0.0))
+	var sway := Vector3(0.6, -1.5, 0.22)
+	# A long body, the head at +Z, rippling more toward the tail.
+	b.style({"solid": 0.4, "glow": 0.18, "fade_z": Vector2(-0.9, -1.55), "sway_z": sway})
+	b.lathe(_profile([[0, -1.55], [0.03, -1.35], [0.06, -0.9], [0.085, -0.3], [0.09, 0.2], [0.085, 0.55], [0.06, 0.72], [0, 0.8]]), 14, along_z, Vector3(1.0, 1.0, 0.8))
+	# A frill along the back, the whole length.
+	b.style({"solid": 0.25, "glow": 0.14, "fade_u": Vector2(0.3, 1.3), "sway_z": sway})
+	for i in 12:
+		var z := 0.5 - float(i) * 0.17
+		b.fan(0.09 - float(i) * 0.004, 0.35, 1.0, 4, _turn(Vector3(0.0, PI * 0.5, 0.0), Vector3(0.0, 0.06, z)))
+	# A wide jaw and glowing eyes at the head.
+	b._maw(Vector3(0.0, -0.01, 0.72), 0.06, Vector3(1.2, 0.6, 1.0), 6, 1.3, Vector2(0.008, 0.03))
+	b.style({"solid": 1.0, "glow": 1.0})
+	for s in [-1.0, 1.0]:
+		b.lathe(_sphere(0.018, 4), 6, _turn(Vector3.ZERO, Vector3(s * 0.06, 0.05, 0.6)))
 	return b._commit()
 
 static func _build_drifter() -> ArrayMesh:

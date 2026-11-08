@@ -55,6 +55,13 @@ var _tear_gain: float = 1.0
 var _beacon: Node3D
 var _beacon_time: float = 0.0
 var _debris: MultiMeshInstance3D
+## The extras layer (David, 2026-11-07): pinks, rays, and eels on their own timers, on top of the
+## rift's feed. They never take one of max_live_phantoms' slots, so yellow and blue stay the steady
+## stream and the extras come between them. Each: {"id", "every" seconds, "max" live at once, and
+## the timer "left"}. A pink waits for a phantom of the feed to be out, so the dodge lands between punches.
+var _extras: Array = []
+## Instance id to extras id, for the extras out now.
+var _extra_live: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("active_rift")
@@ -88,6 +95,7 @@ func configure_wave(wave: Dictionary) -> void:
 	feed_enabled = bool(wave.get("feed", true))
 	set_hologram(bool(wave.get("hologram", false)))
 	_apply_rift_scale(float(wave.get("scale", 1.0)))
+	_configure_extras(wave.get("extras", []))
 	var pool: Array = wave.get("pool", [])
 	if not pool.is_empty():
 		_wave_scenes.clear()
@@ -97,6 +105,25 @@ func configure_wave(wave: Dictionary) -> void:
 			if scene:
 				_wave_scenes.append(scene)
 	_update_health_shader()
+
+func _configure_extras(entries: Array) -> void:
+	_extras.clear()
+	for entry in entries:
+		var id := String(entry.get("id", ""))
+		var scene := load(MissionCatalog.scene_path(id)) as PackedScene if MissionCatalog.scene_path(id) != "" else null
+		var every := float(entry.get("every", 0.0))
+		if scene == null or every <= 0.0:
+			push_warning("RiftManager: extras entry %s has no scene or no interval" % entry)
+			continue
+		# The first of each comes partway into the rift, not on its opening.
+		_extras.append({"id": id, "scene": scene, "every": every, "max": maxi(int(entry.get("max", 1)), 1), "left": every * randf_range(0.5, 1.0)})
+
+## The extras this rift carries: [{id, every, max}], for tests and the audit.
+func extras() -> Array:
+	var out: Array = []
+	for extra in _extras:
+		out.append({"id": extra["id"], "every": extra["every"], "max": extra["max"]})
+	return out
 
 func start_spawning(spawn_immediately: bool = false) -> void:
 	if _closing or _held or not feed_enabled:
@@ -140,6 +167,7 @@ func has_live_phantoms() -> bool:
 
 func _process(delta: float) -> void:
 	_pulse_beacon(delta)
+	_tick_extras(delta)
 	if _debris:
 		_debris.rotate_object_local(Vector3.BACK, delta * 0.12)
 		_debris.visible = not _closing
@@ -168,9 +196,50 @@ func _process(delta: float) -> void:
 
 func _on_spawn_timer_timeout() -> void:
 	_prune_phantoms()
-	if not spawning_enabled or _closing or _live_phantoms.size() >= max_live_phantoms:
+	if not spawning_enabled or _closing or feed_live() >= max_live_phantoms:
 		return
 	_spawn_phantom()
+
+## Phantoms of the feed out now: every live phantom but the extras.
+func feed_live() -> int:
+	_prune_phantoms()
+	var count := 0
+	for instance_id in _live_phantoms.keys():
+		if not _extra_live.has(instance_id):
+			count += 1
+	return count
+
+## Extras of this id out now.
+func extras_live(id: String) -> int:
+	_prune_phantoms()
+	var count := 0
+	for instance_id in _extra_live.keys():
+		if _live_phantoms.has(instance_id) and _extra_live[instance_id] == id:
+			count += 1
+	return count
+
+func _tick_extras(delta: float) -> void:
+	if _extras.is_empty() or not spawning_enabled or _closing or _held or not feed_enabled:
+		return
+	for extra in _extras:
+		extra["left"] = float(extra["left"]) - delta
+		if float(extra["left"]) > 0.0:
+			continue
+		if extras_live(String(extra["id"])) >= int(extra["max"]) or (extra["id"] == "pink" and feed_live() == 0):
+			# Not now: look again shortly rather than skipping a whole interval.
+			extra["left"] = 0.25
+			continue
+		extra["left"] = float(extra["every"]) * randf_range(0.8, 1.2)
+		spawn_extra(String(extra["id"]))
+
+## One extra of this id out of the mouth now, outside the feed's slots.
+func spawn_extra(id: String) -> Node3D:
+	if _closing:
+		return null
+	var scene := load(MissionCatalog.scene_path(id)) as PackedScene
+	if scene == null:
+		return null
+	return _spawn_phantom(false, scene, id)
 
 ## Training: one phantom of this variant (MissionCatalog ids: yellow, blue, green, pink) out of
 ## the mouth now, whatever the feed or the spawn timer says.
@@ -191,7 +260,7 @@ func set_hologram(enabled: bool) -> void:
 
 ## `phantoms_only` leaves hazards such as the sweep out of the pick. A `scene` (training's
 ## spawn_variant) skips the pick altogether.
-func _spawn_phantom(phantoms_only: bool = false, scene: PackedScene = null) -> Node3D:
+func _spawn_phantom(phantoms_only: bool = false, scene: PackedScene = null, extra_id: String = "") -> Node3D:
 	if scene == null:
 		if phantom_scenes.is_empty():
 			push_warning("RiftManager: no phantom scenes configured")
@@ -212,6 +281,9 @@ func _spawn_phantom(phantoms_only: bool = false, scene: PackedScene = null) -> N
 	var angle := randf_range(-0.65, 0.65)
 	var offset := Vector3(sin(angle), randf_range(-0.35, 0.35), cos(angle)) * randf_range(0.8 * _rift_scale, spawn_radius)
 	phantom.position = _phantom_container.to_local(global_position + offset)
+	if extra_id != "":
+		# Set before it enters the tree, so anything watching node_added (Chen) can tell.
+		phantom.set_meta("extra", extra_id)
 	_phantom_container.add_child(phantom)
 	if phantom.has_method("apply_pressure"):
 		phantom.apply_pressure(_speed_scale, _telegraph_scale)
@@ -222,10 +294,12 @@ func _spawn_phantom(phantoms_only: bool = false, scene: PackedScene = null) -> N
 	if _hologram and phantom.has_method("set_hologram"):
 		phantom.set_hologram(true)
 	_register(phantom)
+	if extra_id != "":
+		_extra_live[phantom.get_instance_id()] = extra_id
 	return phantom
 
 func _is_sweep(scene: PackedScene) -> bool:
-	return scene != null and scene.resource_path == MissionCatalog.scene_path("sweep")
+	return scene != null and scene.resource_path in [MissionCatalog.scene_path("sweep"), MissionCatalog.scene_path("ray"), MissionCatalog.scene_path("eel")]
 
 ## The tier's contact multiplier, on anything with a contact_damage that attacks for this rift.
 func _scale_contact(attacker: Node) -> void:
@@ -372,16 +446,19 @@ func _on_phantom_player_contact(amount: float, phantom: Node3D) -> void:
 
 func _on_phantom_tree_exiting(instance_id: int) -> void:
 	_live_phantoms.erase(instance_id)
+	_extra_live.erase(instance_id)
 	_check_drained()
 
 func _unregister_phantom(phantom: Node3D) -> void:
 	if is_instance_valid(phantom):
 		_live_phantoms.erase(phantom.get_instance_id())
+		_extra_live.erase(phantom.get_instance_id())
 
 func _prune_phantoms() -> void:
 	for instance_id in _live_phantoms.keys():
 		if not is_instance_valid(_live_phantoms[instance_id]):
 			_live_phantoms.erase(instance_id)
+			_extra_live.erase(instance_id)
 
 func _close_rift() -> void:
 	if _closing:

@@ -528,14 +528,14 @@ func _show_city_operations() -> void:
 
 ## What the city panels need: see VRWrapPanel.show_operations_status.
 func _city_status(entry: Dictionary) -> Dictionary:
-	var section := WorldMap.section(String(entry["id"]), int(entry.get("section", 0)))
+	var assist: bool = _settings != null and _settings.world_assist
+	var tier := WorldMap.tier_for(String(entry.get("state", "")), assist)
+	var section := WorldMap.section(String(entry["id"]), int(entry.get("section", 0)), tier)
 	var sealed: Array = entry.get("sealed", [])
 	var open := WorldMap.available_nodes(section, sealed)
 	if _selected_node_id == "" or WorldMap.node_in(section, _selected_node_id).is_empty():
 		_selected_node_id = open[0] if not open.is_empty() else ""
 	var node := WorldMap.node_in(section, _selected_node_id)
-	var assist: bool = _settings != null and _settings.world_assist
-	var tier := WorldMap.tier_for(String(entry.get("state", "")), assist)
 	var kind := String(node.get("kind", WorldMap.KIND_SINGLE))
 	var mission := WorldMap.build_mission(entry, int(entry.get("section", 0)), node, tier) if not node.is_empty() else {}
 	var best_score: int = _settings.best_score(_world_record_id(String(entry["id"]), kind), tier) if _settings else 0
@@ -587,11 +587,11 @@ func _world_mission(mission_id: String) -> Dictionary:
 	var entry := WorldMap.city_entry(_settings, String(parsed["city_id"]))
 	if entry.is_empty() or not entry.get("playable", false) or int(entry.get("section", 0)) != int(parsed["section"]):
 		return {}
-	var section := WorldMap.section(String(entry["id"]), int(parsed["section"]))
+	var tier := WorldMap.tier_for(String(entry.get("state", "")), _settings != null and _settings.world_assist)
+	var section := WorldMap.section(String(entry["id"]), int(parsed["section"]), tier)
 	var node := WorldMap.node_in(section, String(parsed["node_id"]))
 	if node.is_empty() or WorldMap.node_status(section, entry.get("sealed", []), String(parsed["node_id"])) != "open":
 		return {}
-	var tier := WorldMap.tier_for(String(entry.get("state", "")), _settings != null and _settings.world_assist)
 	return WorldMap.build_mission(entry, int(parsed["section"]), node, tier)
 
 ## The mission for any district the city has played, sealed or open, in its section then. {} for
@@ -603,7 +603,7 @@ func _replay_mission(mission_id: String) -> Dictionary:
 	var entry := WorldMap.city_entry(_settings, String(parsed["city_id"]))
 	if entry.is_empty() or not entry.get("playable", false) or int(parsed["section"]) > int(entry.get("section", 0)):
 		return {}
-	var node := WorldMap.node_in(WorldMap.section(String(entry["id"]), int(parsed["section"])), String(parsed["node_id"]))
+	var node := WorldMap.node_in(WorldMap.section(String(entry["id"]), int(parsed["section"]), _active_tier), String(parsed["node_id"]))
 	if node.is_empty():
 		return {}
 	return WorldMap.build_mission(entry, int(parsed["section"]), node, _active_tier)
@@ -624,7 +624,7 @@ func _finish_world_mission(victory: bool, score: int) -> Dictionary:
 		return {}
 	var city_id := String(parsed["city_id"])
 	var before := WorldMap.city_entry(_settings, city_id)
-	var section := WorldMap.section(city_id, int(parsed["section"]))
+	var section := WorldMap.section(city_id, int(parsed["section"]), _active_tier)
 	var node := WorldMap.node_in(section, String(parsed["node_id"]))
 	var kind := String(node.get("kind", WorldMap.KIND_SINGLE))
 	var same_section := int(before.get("section", 0)) == int(parsed["section"])
