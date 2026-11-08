@@ -128,3 +128,11 @@ Things to feel on this build: the first boot after a reset (world map with Train
 - **Difficulty.** The tiers still do not feel distinct. A full pass on every mission kind at every tier starts with a layout of what each one is today ([Difficulty_Matrix.md](Difficulty_Matrix.md)), then adjustments agreed from it.
 - **Chen's first-attempt line.** "We haven't seen this rift before" played at the start of almost every mission: every world district is a new mission id, so the first-attempt moment fires nearly every time. Ten more first-attempt lines added and voiced; all fourteen pass `check_vo.ps1`.
 - **Pink floor lane removed.** Too strong a tell, and the pink was already easy to dodge. The bill and the straightening aim are the tell now. Training's card and Chen's pink lines no longer mention a lane.
+
+### 2026-11-08 — design session (no headset), after alpha build code 4
+
+Not a play session: David's answers to the difficulty layout ([Difficulty_Matrix.md](Difficulty_Matrix.md)), and what was built from them.
+
+- **Decided.** A step up is more phantoms, a bit faster, and new body movements; forgiveness stays. Easy is clearly gentler and intensity rises at every level whatever the mission; harder levels may run longer. Each level gets its own missions, with a finale closing each section. Yellow and blue stay the most frequent, green the least, and pinks come more on Medium and Hard as an extra layer between punches. Movement comes from new phantoms, the Ray and the Eel, not the rift; push-ups stay with the tentacles (the Flatfish was rejected). Every Hard mission asks for squats and jumps, to try. Names agreed: Clean Seal, Cover the Team, First Charge; Flurry, Crossfire, Low Ceiling, Close the Sector; Flurry, Storm, Undertow, Last Stand, Shut the Maw. Per-district twists are on hold until the missions are balanced.
+- **Built.** The three levels' missions, the Ray and the Eel, the extras layer, Last Stand's three doors across the front, and the Maw's lighter form for Medium's finale. Chen's script tripled to 622 voiced lines before the ElevenLabs subscription ended.
+- **To feel on the next build.** Whether Easy, Medium, and Hard now feel clearly apart; the Ray's readability at speed; the Eel on the floor in time to jump; Storm and Last Stand intensity; and the lighter Maw.

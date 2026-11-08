@@ -91,7 +91,7 @@ const CYCLE := [
 ## minute is unchanged (Playtest_Log.md, 2026-10-24).
 func _build_cycle() -> Array:
 	if _cycles == 0:
-		return CYCLE.duplicate(true)
+		return _without_jumps(CYCLE.duplicate(true)) if is_light() else CYCLE.duplicate(true)
 	var first_side := -1.0 if randf() < 0.5 else 1.0
 	var blocks := {
 		"sweep_a": [
@@ -116,15 +116,33 @@ func _build_cycle() -> Array:
 	var steps: Array = []
 	for name in order:
 		steps.append_array((blocks[name] as Array).duplicate(true))
-	var jump_side := -1.0 if randf() < 0.5 else 1.0
-	steps.append_array([
-		{"do": "low_sweep", "tell": 1.2, "speed": 7.0, "side": jump_side},
-		{"do": "rest", "seconds": 0.8},
-		{"do": "low_sweep", "tell": 1.0, "speed": 7.5, "side": -jump_side},
-		{"do": "rest", "seconds": 2.2},
-	])
+	if is_light():
+		steps.append({"do": "rest", "seconds": 1.6})
+	else:
+		var jump_side := -1.0 if randf() < 0.5 else 1.0
+		steps.append_array([
+			{"do": "low_sweep", "tell": 1.2, "speed": 7.0, "side": jump_side},
+			{"do": "rest", "seconds": 0.8},
+			{"do": "low_sweep", "tell": 1.0, "speed": 7.5, "side": -jump_side},
+			{"do": "rest", "seconds": 2.2},
+		])
 	_last_order = order
 	return steps
+
+## The authored cycle without its jump pair, for the lighter form.
+static func _without_jumps(steps: Array) -> Array:
+	var out: Array = []
+	var skip_rest := false
+	for step in steps:
+		if step.get("do", "") == "low_sweep":
+			skip_rest = true
+			continue
+		if skip_rest and step.get("do", "") == "rest":
+			skip_rest = false
+			continue
+		out.append(step)
+	out.append({"do": "rest", "seconds": 1.6})
+	return out
 
 ## A shuffle of the four blocks with the summon before the volley, different from last time.
 func _cycle_order() -> Array:
@@ -211,6 +229,11 @@ static func decide_break(maws_faced: int, maws_without_boss: int, roll: float, o
 		return true
 	return roll < odds
 
+## The lighter form Close the Sector deals at Operator (David, 2026-11-07): duck-depth sweeps, a
+## slam that pulls straight back with no spent tentacle, and no jump pair. No push-ups, no jumps.
+func is_light() -> bool:
+	return bool(boss_config.get("light", false))
+
 ## The anchor's drain per second, so it runs dry in `seconds` with no hits and no work.
 static func drain_rate(maximum: int, seconds: float) -> float:
 	return float(maximum) / maxf(seconds, 1.0)
@@ -223,14 +246,20 @@ func prepare(mission: Dictionary) -> void:
 	glimpse = false
 	var settings := get_node_or_null("/root/GameSettings")
 	if not boss_config.is_empty():
-		var faced: int = int(settings.get("boss_maws_faced")) if settings else 0
-		var dry: int = int(settings.get("maws_without_boss")) if settings else 0
-		breaks = force_next_break or always_break or decide_break(faced, dry, randf())
-		if settings and settings.has_method("record_maw"):
-			settings.record_maw(breaks)
+		if is_light():
+			# Close the Sector deals the lighter form per section; when it is dealt it comes
+			# through, and it leaves the Full Resonance break odds alone.
+			breaks = true
+			print("MAW BOSS: light form, BREAKS")
+		else:
+			var faced: int = int(settings.get("boss_maws_faced")) if settings else 0
+			var dry: int = int(settings.get("maws_without_boss")) if settings else 0
+			breaks = force_next_break or always_break or decide_break(faced, dry, randf())
+			if settings and settings.has_method("record_maw"):
+				settings.record_maw(breaks)
+			print("MAW BOSS: %s (boss Maws faced %d, %d in a row without a boss)" % ["BREAKS" if breaks else "holds", faced, dry])
 		anchor_maximum = int(boss_config.get("anchor", anchor_maximum))
 		drain_per_second = drain_rate(anchor_maximum, float(boss_config.get("anchor_seconds", 210.0)))
-		print("MAW BOSS: %s (boss Maws faced %d, %d in a row without a boss)" % ["BREAKS" if breaks else "holds", faced, dry])
 		if breaks and _rumble_stream == null and _stream_task < 0:
 			# Built off the main thread while phase one plays, so nothing hitches.
 			_stream_task = WorkerThreadPool.add_task(_build_streams)
@@ -632,7 +661,7 @@ func _begin_fight() -> void:
 		music.boss_theme()
 	var comms := _comms()
 	if comms:
-		comms.say("boss_get_ready")
+		comms.say("boss_medium_ready" if is_light() else "boss_get_ready")
 		comms.scripted = false
 	phase_two_started.emit(String(boss_config.get("name", "THE MAW")), _rift.rift_id)
 	_steps = OPENER.duplicate(true)
@@ -789,6 +818,13 @@ func _start_slam() -> void:
 		comms.say("boss_slam")
 
 func _on_slam_impacted(_hit: bool) -> void:
+	if is_light():
+		# No spent tentacle and no push-ups: it tears straight back and the fight goes on.
+		var withdraw := _comms()
+		if withdraw:
+			withdraw.say("boss_slam_withdraw")
+		_enter_recoil(RECOIL_SECONDS)
+		return
 	_step_phase = &"spent"
 	_phase_time = 0.0
 	var comms := _comms()
@@ -807,7 +843,10 @@ func _run_slam() -> bool:
 	match _step_phase:
 		&"raise":
 			if not is_instance_valid(_slam):
-				_step_phase = &"spent"
+				if is_light():
+					_enter_recoil(RECOIL_SECONDS)
+				else:
+					_step_phase = &"spent"
 				return false
 			_tentacle.writhe = 0.25
 			var raised := _raised_pose(_frame, center)
@@ -845,7 +884,7 @@ func _run_slam() -> bool:
 				_tentacle.visible = false
 		&"stand":
 			# Nothing comes while the player gets up. Then the limb slides back out.
-			if _phase_time >= STAND_UP_SECONDS:
+			if _phase_time >= (0.6 if is_light() else STAND_UP_SECONDS):
 				_prune_escort()
 				for escort in _escorts:
 					if is_instance_valid(escort):

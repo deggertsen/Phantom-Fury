@@ -7,6 +7,8 @@
 - Angler (yellow left, blue right): lure as the resonance crit in hook, uppercut, or jab position. Wrong hand rejects and breaks the chain.
 - Carapace (green): first hand is a catch, second hand inside 0.55 s is the block.
 - Spearfin (pink): telegraph (bill and aim only; the floor lane was removed 2026-11-07), charge; resolved by leaving its path. Cannot be punched.
+- Ray (orange manta) and Eel (white, Hard only), 2026-11-08: phantoms that move the body. Each flies out of its rift, lines up, and passes through where the Striker stands, judged as a sweep with nothing of the rift drawn (`SweepCreature`). Go under a Ray (a duck at Medium, a squat at Hard); jump an Eel. Cannot be punched.
+- Extras layer (`RiftManager`, wave `extras`): pinks, Rays, and Eels on their own timers, outside the feed's live slots; a pink waits for a phantom of the feed so the dodge lands between punches.
 - Three body forms per species, built as one mesh each and prewarmed with the combat shaders while the menu is up.
 - Pressure scaling per wave: speed and telegraph scales applied to every phantom, and the difficulty's contact scale to every contact.
 - Possession: head or body within 0.30 m of the phantom core. Drains 20 life force, plays the siphon sound, frost and veins, distortion and impact slam.
@@ -16,15 +18,17 @@
 
 ### Rifts and missions
 - Six operations in `Scripts/Core/mission_catalog.gd` with per-rift wave tables, pressure labels, open barks, seal lines, mop-up line, and debriefs.
-- Rift director: single, clustered pair, or front-arc placement; up to two concurrent rifts; staggered first spawns.
+- Rift director: single, clustered pair, front-arc, or fixed-bearing (Last Stand's three doors at -60, 0, and 60 degrees) placement; up to three concurrent rifts; staggered first spawns.
 - Rift manager: health, damage flash scaled by punch power, health shader, beacon column with floor ring and label, orbiting debris, scale for The Maw, dissolve on seal.
 - Stragglers: a sealed rift stops spawning but its phantoms stay in play and still score or hurt. The rift reports `drained` when they are gone; the director reports `all_clear` when every rift is sealed and drained, and only then is the operation won. Status reads "SEALED • CLEAR PHANTOMS" meanwhile. Scene teardown is never read as a clear.
 - Rift compass chevron at the edge of view and phantom bearing markers.
 - Round controller: pre-round countdown, elapsed mission clock (counts up, holds on pause, never ends the round), chain multiplier to 3x with crit and on-beat gains, victory, defeat, pause and resume. It applies the chosen difficulty to a copy of the mission before any rift opens. Victory records the completion time as the best time for that operation and difficulty when it is faster.
 
 ### Difficulty and the movement tier
-- Four difficulties in `Scripts/Core/difficulty_tier.gd`: Assist, Standard, Operator, Full Resonance. Each multiplies a wave's speed, tells, rift health, and spawn interval, and scales contact damage; Standard is the catalog exactly. Chosen beside Deploy on the city map (four buttons), saved in `GameSettings.difficulty_tier`, default Standard, Full Resonance open from the start. Deploy, the site panel, and results show it. Best score and time are kept per mission and difficulty.
-- Full Resonance: rift health x1.1, and Chen says a Full Resonance line in the countdown. Ordinary rifts send no sweeps; the boss carries the movements. The Maw (OP-06) carries its boss there and only there: the break odds (`MawBoss.decide_break`), the false seal and turn, then high sweeps to squat, low sweeps to jump, slams to side-step, push-ups on the spent tentacle (`PushUpDetector`, head height), and escort volleys, until the anchor runs out and it retreats. Every other difficulty keeps the seal and the occasional tentacle glimpse.
+- Three difficulty levels on the world map (2026-11-08, [Difficulty_Matrix.md](Difficulty_Matrix.md)): a threatened city plays Easy (Standard, or Assist), a city in danger Medium (Operator), an overrun city Hard (Full Resonance). Each level has its own missions, authored at its pace in `WorldMap.build_mission`: Clean Seal, Cover the Team, and the First Charge finale; Flurry, Crossfire, Low Ceiling, and the Close the Sector finale; Flurry, Storm, Undertow, Last Stand, and the Shut the Maw finale. The difficulty audit holds every level above the one below in pressure.
+- The Maw's lighter form at Medium (Close the Sector, about two sections in five): duck-depth sweeps, a slam that pulls straight back, no jumps, no push-ups.
+- Four tiers in `Scripts/Core/difficulty_tier.gd`: Assist, Standard, Operator, Full Resonance. Since 2026-11-08 only Assist scales a wave (slower, longer tells, softer contact, at about Standard's length); the others set what the body is asked for (a duck at most below Full Resonance), drop Eels without jumps, let the lighter or full Maw through, and pick Chen's countdown line. Records are kept per tier.
+- Full Resonance: every mission asks for squats (Rays) and jumps (Eels); push-ups stay with the Maw's tentacles. The full Maw comes through only here, in Shut the Maw: the break odds, the pity rule, and the tentacle fight.
 - Squat detector (`SquatDetector`, every build) with the bend check; push-up detector; jump tracking for the low sweep. Debug builds: B (Shift+B forces a break) or `--mission=the_maw_boss` deploys The Maw at Full Resonance; `--tier=<id>` sets a command-line deploy's difficulty; the Sweep Drill stays a debug mission.
 
 ### Player and presentation

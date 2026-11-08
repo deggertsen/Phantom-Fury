@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $folder = Join-Path $projectRoot 'Assets\Audio\VO\chen'
-$script = Get-Content (Join-Path $folder 'chen_lines.json') -Raw | ConvertFrom-Json
+$script = Get-Content (Join-Path $folder 'chen_lines.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $key = $env:ELEVENLABS_API_KEY
 $keyFile = Join-Path $env:APPDATA 'PhantomFray\elevenlabs_key.txt'
 if (-not $key -and (Test-Path $keyFile)) { $key = (Get-Content $keyFile -Raw).Trim() }

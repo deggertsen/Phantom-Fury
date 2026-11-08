@@ -218,6 +218,19 @@ func _capture_world() -> void:
 	_center.show_operations_map(easy)
 	_right.show_district_detail(easy)
 	await _capture("city-operations-assist.png")
+	# A city in danger with its finale picked: Medium's missions and Close the Sector's card.
+	for entry in entries:
+		if entry.get("state", "") == WorldMap.STATE_DANGER and entry.get("playable", false):
+			var finale_id := ""
+			for node in WorldMap.section(String(entry["id"]), int(entry.get("section", 0)), DifficultyTier.OPERATOR)["nodes"]:
+				if int(node["column"]) == 2:
+					finale_id = String(node["id"])
+			var medium := _city(entry, [], false, finale_id)
+			_left.show_operations_status(medium)
+			_center.show_operations_map(medium)
+			_right.show_district_detail(medium)
+			await _capture("city-operations-medium.png")
+			break
 	# A Maw district's card at Full Resonance: it reads the same at every tier.
 	var maw := _maw_city(entries)
 	if not maw.is_empty():
@@ -308,7 +321,7 @@ func _maw_city(entries: Array[Dictionary]) -> Dictionary:
 		if entry.get("state", "") != WorldMap.STATE_OVERRUN:
 			continue
 		for index in 4:
-			for node in WorldMap.section(String(entry["id"]), index)["nodes"]:
+			for node in WorldMap.section(String(entry["id"]), index, DifficultyTier.FULL_RESONANCE)["nodes"]:
 				if node["kind"] == WorldMap.KIND_MAW:
 					var shown := entry.duplicate()
 					shown["section"] = index
@@ -325,12 +338,12 @@ func _entry(entries: Array[Dictionary], city_id: String) -> Dictionary:
 ## picked, in the entry's section or in `section_index`.
 func _city(entry: Dictionary, sealed: Array, assist: bool = false, selected: String = "", section_index: int = -1) -> Dictionary:
 	var index := section_index if section_index >= 0 else int(entry.get("section", 0))
-	var section := WorldMap.section(String(entry["id"]), index)
+	var tier := WorldMap.tier_for(String(entry.get("state", "")), assist)
+	var section := WorldMap.section(String(entry["id"]), index, tier)
 	var open := WorldMap.available_nodes(section, sealed)
 	if selected == "":
 		selected = String(open[0]) if not open.is_empty() else ""
 	var node := WorldMap.node_in(section, selected)
-	var tier := WorldMap.tier_for(String(entry.get("state", "")), assist)
 	var kind := String(node.get("kind", WorldMap.KIND_SINGLE))
 	var mission := WorldMap.build_mission(entry, index, node, tier)
 	return {
