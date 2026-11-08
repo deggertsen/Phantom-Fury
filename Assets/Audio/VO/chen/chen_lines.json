@@ -344,15 +344,10 @@
       "note": "Said in the countdown at the hard difficulty, before her mission line. Squats and jumps in every fight, so clear the space. A safety reminder without fuss.",
       "lines": ["Squats and jumps every fight. Clear your space.", "Low and high in every fight. Make room.", "Your legs will work here. Clear the floor.", "Squatting and jumping every fight. Space check.", "You'll be jumping. Clear anything you'd trip on.", "Harder ground. Duck deep, jump clean, keep clear."]
     },
-    "boss_slam_withdraw": {
-      "priority": 2, "cooldown": 0, "tag": "[alert]",
-      "note": "A lighter boss fight: the tentacle slammed and pulled straight back, nothing left on the floor. Steer the Striker back to the phantoms.",
-      "lines": ["It's pulling back. Back to the phantoms.", "Tentacle's gone. Focus on the escort.", "It retracted. Hit the phantoms.", "Missed you. Now the phantoms.", "That's withdrawn. Eyes on the phantoms.", "It's retreating. Keep breaking phantoms."]
-    },
     "boss_medium_ready": {
       "priority": 3, "cooldown": 0, "tag": "[focused, serious]",
-      "note": "The lighter boss fight begins: a tentacle reaches through the rift. Weighty, but steadier and less dread than the Full Resonance entrance.",
-      "lines": ["Something big's holding this rift. Stay ready.", "That's a tentacle. Watch it, and keep moving.", "It's reaching through. Stay out from under it.", "Big one in the rift. Mind the slams.", "We've got something heavy. Keep your footing.", "Anchored in there. Dodge it, break the rest."]
+      "note": "The lighter boss fight begins: a tentacle reaches through the rift, sweeping at head height. It never slams at this level. Weighty, but steadier and less dread than the Full Resonance entrance.",
+      "lines": ["Something big's holding this rift. Stay ready.", "That's a tentacle. Watch it, and keep moving.", "It's reaching through. Stay out from under it.", "We've got something heavy. Keep your footing.", "Anchored in there. Dodge it, break the rest."]
     }
   }
 }

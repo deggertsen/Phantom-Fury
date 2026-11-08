@@ -2085,7 +2085,7 @@ func _validate_resonance_sweep() -> void:
 ## clipped; an Eel is cleared only by a jump. Both ride a wave's extras layer, outside the feed's
 ## slots, beside pinks that wait for a phantom of the feed. Tiers gate them: a Ray asks a duck below
 ## Full Resonance and a squat at it, and an Eel never comes without jumps. Last Stand's doors stand
-## at fixed bearings across the front; the Maw's lighter form never asks for a jump or push-ups;
+## at fixed bearings across the front; the Maw's lighter form never slams or asks for a jump;
 ## and Chen calls each one.
 func _validate_body_phantoms() -> void:
 	var player := Node3D.new()
@@ -2216,8 +2216,8 @@ func _validate_body_phantoms() -> void:
 	director.queue_free()
 	container.queue_free()
 	await process_frame
-	# The Maw's lighter form: no jump pair in any cycle, the slam in every one, and it always comes
-	# through without touching the Full Resonance break odds.
+	# The Maw's lighter form: no slam and no jump pair in any cycle, the volley in every one, and
+	# it always comes through without touching the Full Resonance break odds.
 	var boss := MawBoss.new()
 	root.add_child(boss)
 	await process_frame
@@ -2226,12 +2226,13 @@ func _validate_body_phantoms() -> void:
 		var steps := boss._build_cycle()
 		boss._cycles += 1
 		var does: Array = steps.map(func(step: Dictionary) -> String: return String(step.get("do", "")))
-		if "low_sweep" in does or not "slam" in does:
-			failures.append("The Maw's lighter form asks for a jump, or never slams: %s" % [does])
+		if "low_sweep" in does or "slam" in does or not "volley" in does or not "summon" in does:
+			failures.append("The Maw's lighter form slams, asks for a jump, or lost its volley: %s" % [does])
 	boss.boss_config = {}
 	boss._cycles = 0
-	if not "low_sweep" in boss._build_cycle().map(func(step: Dictionary) -> String: return String(step.get("do", ""))):
-		failures.append("The full Maw lost its jump pair")
+	var full_does: Array = boss._build_cycle().map(func(step: Dictionary) -> String: return String(step.get("do", "")))
+	if not "low_sweep" in full_does or not "slam" in full_does:
+		failures.append("The full Maw lost its jump pair or its slam")
 	var settings := root.get_node_or_null("GameSettings")
 	var faced_before: int = int(settings.get("boss_maws_faced")) if settings else 0
 	boss.prepare({"boss": {"light": true, "anchor": 800, "anchor_seconds": 180.0}})
@@ -2242,7 +2243,7 @@ func _validate_body_phantoms() -> void:
 	await process_frame
 	# Chen: a call for each as it lines up, and a coaching line when one catches the Striker.
 	var lines: Dictionary = (load("res://Assets/Audio/VO/chen/chen_lines.json") as JSON).data.get("events", {})
-	for event in ["first_ray", "ray_call", "ray_call_low", "ray_clipped", "first_eel", "eel_call", "eel_clipped", "pink_call", "boss_slam_withdraw", "boss_medium_ready", "deploy_medium", "deploy_hard_moves"]:
+	for event in ["first_ray", "ray_call", "ray_call_low", "ray_clipped", "first_eel", "eel_call", "eel_clipped", "pink_call", "boss_medium_ready", "deploy_medium", "deploy_hard_moves"]:
 		if not lines.has(event):
 			failures.append("Chen has no %s line" % event)
 	var chen := ChenComms.new()

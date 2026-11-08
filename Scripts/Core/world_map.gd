@@ -901,8 +901,8 @@ static func _close_the_sector(mission: Dictionary, district: String, boss: bool)
 		_one_rift_lines(mission, "LAST DISTRICT")
 		mission["glimpse"] = true
 		mission["world"]["boss"] = true
-		# The lighter form: duck-depth sweeps, a slam that pulls straight back, no jumps, no
-		# push-ups (MawBoss, "light"). It always comes through when this form is dealt.
+		# The lighter form: duck-depth sweeps and the volley; no slams (Hard's, always push-ups), no
+		# jumps (MawBoss, "light"). It always comes through when this form is dealt.
 		mission["tier_boss"] = {
 			"name": "THE MAW",
 			"light": true,

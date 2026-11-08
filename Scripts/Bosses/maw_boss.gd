@@ -91,7 +91,7 @@ const CYCLE := [
 ## minute is unchanged (Playtest_Log.md, 2026-10-24).
 func _build_cycle() -> Array:
 	if _cycles == 0:
-		return _without_jumps(CYCLE.duplicate(true)) if is_light() else CYCLE.duplicate(true)
+		return _light_steps(CYCLE.duplicate(true)) if is_light() else CYCLE.duplicate(true)
 	var first_side := -1.0 if randf() < 0.5 else 1.0
 	var blocks := {
 		"sweep_a": [
@@ -117,7 +117,7 @@ func _build_cycle() -> Array:
 	for name in order:
 		steps.append_array((blocks[name] as Array).duplicate(true))
 	if is_light():
-		steps.append({"do": "rest", "seconds": 1.6})
+		steps = _light_steps(steps)
 	else:
 		var jump_side := -1.0 if randf() < 0.5 else 1.0
 		steps.append_array([
@@ -129,15 +129,20 @@ func _build_cycle() -> Array:
 	_last_order = order
 	return steps
 
-## The authored cycle without its jump pair, for the lighter form.
-static func _without_jumps(steps: Array) -> Array:
+## A cycle for the lighter form: no slam and no jump pair. David, 2026-11-08: slams belong to Hard
+## and always end in push-ups, so a slam that only pulls back would confuse. The summon stays so
+## the volley still has an escort to throw.
+static func _light_steps(steps: Array) -> Array:
 	var out: Array = []
 	var skip_rest := false
 	for step in steps:
-		if step.get("do", "") == "low_sweep":
+		var kind: String = step.get("do", "")
+		if kind == "slam":
+			continue
+		if kind == "low_sweep":
 			skip_rest = true
 			continue
-		if skip_rest and step.get("do", "") == "rest":
+		if skip_rest and kind == "rest":
 			skip_rest = false
 			continue
 		out.append(step)
@@ -229,8 +234,8 @@ static func decide_break(maws_faced: int, maws_without_boss: int, roll: float, o
 		return true
 	return roll < odds
 
-## The lighter form Close the Sector deals at Operator (David, 2026-11-07): duck-depth sweeps, a
-## slam that pulls straight back with no spent tentacle, and no jump pair. No push-ups, no jumps.
+## The lighter form Close the Sector deals at Operator (David, 2026-11-08): duck-depth sweeps, the
+## volley, and its summons. No slam (slams are Hard's, and always end in push-ups) and no jump pair.
 func is_light() -> bool:
 	return bool(boss_config.get("light", false))
 
@@ -818,13 +823,6 @@ func _start_slam() -> void:
 		comms.say("boss_slam")
 
 func _on_slam_impacted(_hit: bool) -> void:
-	if is_light():
-		# No spent tentacle and no push-ups: it tears straight back and the fight goes on.
-		var withdraw := _comms()
-		if withdraw:
-			withdraw.say("boss_slam_withdraw")
-		_enter_recoil(RECOIL_SECONDS)
-		return
 	_step_phase = &"spent"
 	_phase_time = 0.0
 	var comms := _comms()
@@ -843,10 +841,7 @@ func _run_slam() -> bool:
 	match _step_phase:
 		&"raise":
 			if not is_instance_valid(_slam):
-				if is_light():
-					_enter_recoil(RECOIL_SECONDS)
-				else:
-					_step_phase = &"spent"
+				_step_phase = &"spent"
 				return false
 			_tentacle.writhe = 0.25
 			var raised := _raised_pose(_frame, center)
@@ -884,7 +879,7 @@ func _run_slam() -> bool:
 				_tentacle.visible = false
 		&"stand":
 			# Nothing comes while the player gets up. Then the limb slides back out.
-			if _phase_time >= (0.6 if is_light() else STAND_UP_SECONDS):
+			if _phase_time >= STAND_UP_SECONDS:
 				_prune_escort()
 				for escort in _escorts:
 					if is_instance_valid(escort):

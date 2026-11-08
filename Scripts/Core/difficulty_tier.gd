@@ -67,8 +67,8 @@ const TIERS := {
 		"jumps": false,
 		"push_ups": false,
 		"bosses": false,
-		# The Maw's lighter form may close a sector here: duck-depth sweeps, slams that pull straight
-		# back, no jumps and no push-ups (David, 2026-11-07).
+		# The Maw's lighter form may close a sector here: duck-depth sweeps and the volley, no slams
+		# (Hard's, always push-ups) and no jumps (David, 2026-11-08).
 		"light_bosses": true,
 		"deploy_event": "deploy_medium",
 	},

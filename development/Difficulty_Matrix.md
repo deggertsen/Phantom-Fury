@@ -55,7 +55,7 @@ Pinks, Rays, and Eels come from a wave's `extras`, each on its own timer, and ne
 
 ## The Maw's lighter form
 
-Close the Sector's boss form at Medium (`"light": true` on its boss block, `MawBoss.is_light`): duck-depth sweeps, a slam that pulls straight back with no spent tentacle, no jump pair, and no push-ups. It always comes through when the section deals it and leaves the Full Resonance break odds alone. Chen opens it with `boss_medium_ready` and calls the slam's withdrawal with `boss_slam_withdraw`.
+Close the Sector's boss form at Medium (`"light": true` on its boss block, `MawBoss.is_light`): duck-depth sweeps and the volley with its summons. No slam and no jump pair. David, 2026-11-08: slams belong to Hard and always end in push-ups, so a slam that did anything else would confuse. It always comes through when the section deals it and leaves the Full Resonance break odds alone. Chen opens it with `boss_medium_ready`.
 
 ## What the audit holds
 
