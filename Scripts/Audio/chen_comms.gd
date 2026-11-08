@@ -16,6 +16,9 @@ class_name ChenComms
 ##   max_wait  a line that cannot start within this many seconds of the moment that triggered
 ##             it is dropped, because the moment has passed. Priority 3 is never dropped,
 ##             unless the moment sets its own max_wait, which holds whatever the priority.
+## Incoming warnings are source-bound: they skip conversational cooldowns, expire after
+## 0.6 s, and need at least 0.5 s of approach left when speech can start. Busy means skip,
+## never interrupt a line or announce a phantom that has already reached the Striker.
 
 signal line_started(speaker: String, text: String, seconds: float)
 ## She was cut off mid-line (cut_off). The caption should go too.
@@ -27,6 +30,9 @@ const FOLDER := "res://Assets/Audio/VO/chen/"
 const SCRIPT := preload("res://Assets/Audio/VO/chen/chen_lines.json")
 const DEFAULT_MAX_WAIT := 3.0
 const MAX_QUEUE := 3
+## Incoming warnings take the next free slot, but never wait long enough to become commentary.
+const CALLOUT_MAX_WAIT := 0.6
+const CALLOUT_MIN_LEAD := 0.5
 ## A captioned line with no recording holds this long per word, and never less than 2.2 s.
 const CAPTION_SECONDS_PER_WORD := 0.36
 ## Rifts this close to where the player is looking are "dead ahead"; wider ones get a clock bearing.
@@ -72,7 +78,6 @@ var _best_before: int = 0
 var _last_outcome: Dictionary = {}
 ## Phantom kinds already introduced this session, so each gets one coaching line.
 var _introduced: Dictionary = {}
-var _scan_left: float = 0.0
 ## Sweeps lit since her last bend correction; -1 until she has made one this mission.
 var _sweeps_since_bend_call: int = -1
 var _jump_called: bool = false
@@ -98,22 +103,31 @@ func _ready() -> void:
 	_connect()
 
 ## Queue a line for one of the events in chen_lines.json.
-func say(event: String) -> void:
+func say(event: String, source: Node = null) -> void:
 	var info: Dictionary = _events.get(event, {})
 	if info.is_empty() or event == _playing_event or (scripted and not event.begins_with("boss_")):
 		return
 	if lock_prefix != "" and not event.begins_with(lock_prefix):
 		return
+	# Clear obsolete warnings before deduplicating: a new arrival must not inherit an old target.
+	_queue = _queue.filter(_can_still_start)
 	for queued in _queue:
 		if queued["event"] == event:
 			return
-	_queue.append({
+	var entry := {
 		"event": event,
 		"priority": int(info.get("priority", 1)),
 		"cooldown": float(info.get("cooldown", 0)),
 		"max_wait": float(info.get("max_wait", -1.0)),
 		"at": _clock,
-	})
+	}
+	if source:
+		entry["source"] = weakref(source)
+		entry["priority"] = 3
+		entry["cooldown"] = 0.0
+		var own_wait := float(entry["max_wait"])
+		entry["max_wait"] = minf(own_wait, CALLOUT_MAX_WAIT) if own_wait >= 0.0 else CALLOUT_MAX_WAIT
+	_queue.append(entry)
 	_queue.sort_custom(_goes_first)
 	if _queue.size() > MAX_QUEUE:
 		_queue.resize(MAX_QUEUE)
@@ -154,6 +168,14 @@ func _earliest_start(entry: Dictionary) -> float:
 
 ## Dropped as soon as it can no longer start within max_wait of its trigger.
 func _can_still_start(entry: Dictionary) -> bool:
+	if entry.has("source"):
+		# https://docs.godotengine.org/en/stable/classes/class_weakref.html#class-weakref-method-get-ref
+		var source: Node = entry["source"].get_ref()
+		if source == null or not source.is_inside_tree() or source.is_queued_for_deletion():
+			return false
+		var lead: float = source.incoming_callout_seconds()
+		if lead <= _earliest_start(entry) - _clock + CALLOUT_MIN_LEAD:
+			return false
 	var own_wait: float = entry["max_wait"]
 	if own_wait >= 0.0:
 		return _earliest_start(entry) - float(entry["at"]) <= own_wait
@@ -256,11 +278,19 @@ func _connect() -> void:
 	if _life:
 		_life.life_force_state_changed.connect(_on_life_state_changed)
 		_life.damage_applied.connect(_on_damage_applied)
-	# Sweeps come from rifts and, later, the boss's tentacles. Her call has to land as the rails
-	# light, which the half-second phantom scan would miss, so she hears each one as it arrives.
+	# Hear arrivals directly; polling the phantom group also used to find dissolving bodies.
 	get_tree().node_added.connect(_on_node_added)
+	for phantom in get_tree().get_nodes_in_group("phantom"):
+		_on_node_added(phantom)
 
 func _on_node_added(node: Node) -> void:
+	if node is Phantom or node is SweepCreature:
+		# Variant IDs are assigned in _ready, and the spawner applies pressure/escort settings
+		# after add_child. Defer until both are complete, without retaining a freed phantom.
+		if node.is_node_ready():
+			_on_phantom_spawned.call_deferred(weakref(node))
+		else:
+			node.ready.connect(_on_phantom_spawned.bind(weakref(node)), CONNECT_DEFERRED | CONNECT_ONE_SHOT)
 	var sweep := node as ResonanceSweep
 	if sweep:
 		sweep.telegraph_started.connect(_on_sweep_lit.bind(sweep))
@@ -268,15 +298,29 @@ func _on_node_added(node: Node) -> void:
 		if sweep is SweepCreature:
 			sweep.player_contact.connect(_on_creature_contact.bind(String(sweep.variant_id)))
 		return
+
+func _on_phantom_spawned(reference: WeakRef) -> void:
+	var phantom: Node = reference.get_ref()
+	if phantom == null or not phantom.is_inside_tree() or phantom.is_queued_for_deletion():
+		return
+	if _round == null or not _round.is_round_active() or bool(_round.current_mission().get("tutorial", false)):
+		return
+	# A spawn can be observed before our first process tick of the new mission.
+	_watch_round(0.0)
+	if phantom.incoming_callout_seconds() <= CALLOUT_MIN_LEAD:
+		return
+	var kind := String(phantom.get("variant_id"))
+	if not _introduced.has(kind) and _events.has("first_" + kind):
+		say("first_" + kind, phantom)
 	# A pink from the extras layer: a heads-up now and then, while the Striker is busy punching.
-	if not _training and node.get_meta("extra", "") == "pink" and _clock - _last_pink_call >= PINK_CALL_GAP:
+	elif phantom.get_meta("extra", "") == "pink" and _clock - _last_pink_call >= PINK_CALL_GAP:
 		_last_pink_call = _clock
-		say("pink_call")
+		say("pink_call", phantom)
 
 func _on_creature_contact(_damage: float, variant: String) -> void:
 	_clipped_by = variant
 
-func _watch_round(delta: float) -> void:
+func _watch_round(_delta: float) -> void:
 	if _round == null:
 		return
 	var active := _round.is_round_active()
@@ -284,15 +328,6 @@ func _watch_round(delta: float) -> void:
 	if active and not _was_active and _round.elapsed_seconds < 1.0:
 		_begin_mission()
 	_was_active = active
-	if not active:
-		return
-	_scan_left -= delta
-	if _scan_left <= 0.0:
-		_scan_left = 0.5
-		for phantom in get_tree().get_nodes_in_group("phantom"):
-			var kind := String(phantom.get("variant_id"))
-			if kind != "" and not _introduced.has(kind) and _events.has("first_" + kind):
-				say("first_" + kind)
 
 func _begin_mission() -> void:
 	_training = bool(_round.current_mission().get("tutorial", false))
@@ -377,19 +412,19 @@ func _on_strike_rejected(reason: StringName) -> void:
 func _on_sweep_lit(sweep: ResonanceSweep) -> void:
 	# The Ray and the Eel get their own short calls, timed like the sweep's.
 	if sweep is EelPhantom:
-		say("eel_call")
+		say("eel_call", sweep)
 		return
 	if sweep is RayPhantom:
-		say("ray_call_low" if sweep.squat_depth >= DifficultyTier.SQUAT_DEPTH - 0.001 else "ray_call")
+		say("ray_call_low" if sweep.squat_depth >= DifficultyTier.SQUAT_DEPTH - 0.001 else "ray_call", sweep)
 		return
 	if is_instance_valid(sweep) and sweep.low:
 		# A low sweep is jumped. The first one in a mission comes with the space check.
-		say("sweep_jump" if _jump_called else "sweep_jump_first")
+		say("sweep_jump" if _jump_called else "sweep_jump_first", sweep)
 		_jump_called = true
 		return
 	if _sweeps_since_bend_call >= 0:
 		_sweeps_since_bend_call += 1
-	say("sweep")
+	say("sweep", sweep)
 
 ## Decision 5: a bend under the blade still clears it. She coaches the squat, and not every time.
 func _on_sweep_resolved(result: Dictionary) -> void:

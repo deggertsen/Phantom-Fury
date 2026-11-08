@@ -228,6 +228,16 @@ func is_strike_window_open() -> bool:
 func shows_approach_cue() -> bool:
 	return not _terminal and not _dissolving
 
+## Conservative time left to warn before the first punch window, at maximum approach speed.
+## Resolved bodies keep dissolving in the tree; escorts and return passes are not new arrivals.
+func incoming_callout_seconds() -> float:
+	if _terminal or _dissolving or _escorting or _held or _player_camera == null:
+		return 0.0
+	if _phase == Phase.RECOVER or _camera_closest <= strike_reach:
+		return 0.0
+	var distance := global_position.distance_to(_player_camera.global_position) - strike_reach
+	return maxf(distance, 0.0) / maxf(maxf(move_speed, pattern_commit_speed), 0.01)
+
 func receive_strike(strike: Dictionary) -> Dictionary:
 	if _terminal:
 		return _make_result(false, false, &"already_resolved", 0, 0, strike)
