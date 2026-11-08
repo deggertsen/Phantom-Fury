@@ -32,8 +32,9 @@ const NUDGE_SECONDS := 8.0
 const MAX_NUDGES := 2
 ## Silence between two of her lines.
 const BREATH := 0.25
-## The head this far from a paused pink's charge line is out of its path.
-const LANE_CLEARANCE := 0.5
+## The head this far from a paused pink's charge line is out of its path: past the pink's contact
+## radius (0.6 m since it doubled in size on 2026-11-08) with a margin, so a release never catches them.
+const LANE_CLEARANCE := 0.75
 ## Both fists held this long in the play-space beat says "ready".
 const READY_HOLD := 0.5
 ## Looking at the left glove: its display within this distance and this many degrees of the

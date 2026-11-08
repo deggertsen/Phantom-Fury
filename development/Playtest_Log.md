@@ -137,3 +137,9 @@ Not a play session: David's answers to the difficulty layout ([Difficulty_Matrix
 - **Built.** The three levels' missions, the Ray and the Eel, the extras layer, Last Stand's three doors across the front, and the Maw's lighter form for Medium's finale. Chen's script tripled to 622 voiced lines before the ElevenLabs subscription ended.
 - **No slams at Medium.** After reading the build, David cut the lighter Maw's slam that pulled straight back: slams belong to Hard and always end in push-ups, so any other slam would confuse. The lighter form now sweeps at duck depth and throws its volley. Its withdraw line and one countdown take that said "Mind the slams" were removed (618 voiced lines).
 - **To feel on the next build.** Whether Easy, Medium, and Hard now feel clearly apart; the Ray's readability at speed; the Eel on the floor in time to jump; Storm and Last Stand intensity; and the lighter Maw.
+
+### 2026-11-08 — headset session, Easy and Medium (development build)
+
+- **Feel.** Easy and Medium feel a lot better: the levels read as distinct now. No Rays or Eels seen yet (none at Easy by design; Medium's Rays are in Low Ceiling and Close the Sector), so no feedback on them.
+- **Close the Sector's boss felt pretty good.** Asked for its jump pair back so it is more than ducks and the escort, and for a bigger escort. Done: the lighter Maw keeps its low-sweep jump pair (still no slam), and a summon calls six phantoms instead of four, on both forms so Hard never has less.
+- **Pinks doubled.** Body and contact radius both twice the size (contact 0.6 m from its path instead of 0.3), so getting out of the way takes a real step. Training's clearance before it releases a paused pink rose from 0.5 m to 0.75 m to stay outside the new radius.

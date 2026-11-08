@@ -49,7 +49,7 @@ The lure (`SweetSpotVisual`) sits in one of three places relative to the face th
 Approaches lower and faster, widens its body in the commit phase. The first hand to touch it starts a 0.55 s window and returns `block_half`; the other hand inside that window completes the block. The same hand again, or a late second hand, restarts the window.
 
 ### Spearfin specifics
-Does not use the arc. It telegraphs for `telegraph_seconds` (1.15 s); nothing is drawn on the floor (the chevron lane was removed on 2026-11-07 as too strong a tell), so the tell is the bill and the aim. The aim starts bowed to one side and straightens as the telegraph completes, then it charges at `charge_speed` (7 m/s). Passing its locked target without possessing resolves it as a dodge.
+Does not use the arc. It telegraphs for `telegraph_seconds` (1.15 s); nothing is drawn on the floor (the chevron lane was removed on 2026-11-07 as too strong a tell), so the tell is the bill and the aim. The aim starts bowed to one side and straightens as the telegraph completes, then it charges at `charge_speed` (7 m/s). Passing its locked target without possessing resolves it as a dodge. Since 2026-11-08 it is twice the size of the other phantoms (`SIZE`), body and contact radius alike (0.6 m from its path to the head or body instead of 0.3), so the dodge is a real step rather than a lean.
 
 ### Ray and Eel specifics
 Added 2026-11-08, when David asked for body movement to come from phantoms rather than the rift. Both are `SweepCreature`s: a `ResonanceSweep` with its rails and blade hidden, carrying a creature body. Each flies out of its rift (`approach_speed` 4.2 m/s, scaled by the wave's speed), lines up 7.5 m out, and then runs the sweep: the tell (1.15 s, scaled), then the pass at `blade_speed` through where the Striker stands. The pass is judged exactly as the sweep's blade: a head under the line clears a Ray (a bend still clears it, without the bonus), and an Eel is cleared by being in the air, just landed, or taking off (the low sweep's jump check). Like every sweep they wait for one another, with a rest between, so movements never come back to back.
@@ -73,7 +73,7 @@ The difficulty sits on top of the wave. `RoundController.begin_round(mission, ti
 |---|---|---|---|---|---|---|
 | Assist | x0.85 | x1.25 | x0.96 | x1.04 | x0.6 (12 a possession) | duck depth at most |
 | Standard | x1 | x1 | x1 | x1 | x1 (20) | duck depth at most |
-| Operator | x1 | x1 | x1 | x1 | x1 (20) | duck depth at most; the Maw's lighter form |
+| Operator | x1 | x1 | x1 | x1 | x1 (20) | duck depth at most outside the boss; the Maw's lighter form (its jump pair is the one jump below Full Resonance) |
 | Full Resonance | x1 | x1 | x1 | x1 | x1 (20) | Rays at squat depth (0.20), and Eels; a wave's own sweep asks for a squat |
 
 Since 2026-11-08 only Assist scales: each level's missions are authored at its own pace in `WorldMap.build_mission` (see [Difficulty_Matrix.md](Difficulty_Matrix.md)), and Operator and Full Resonance set what the body is asked for, which bosses may come, and which extras survive (no Eel without jumps).

@@ -55,7 +55,7 @@ Pinks, Rays, and Eels come from a wave's `extras`, each on its own timer, and ne
 
 ## The Maw's lighter form
 
-Close the Sector's boss form at Medium (`"light": true` on its boss block, `MawBoss.is_light`): duck-depth sweeps and the volley with its summons. No slam and no jump pair. David, 2026-11-08: slams belong to Hard and always end in push-ups, so a slam that did anything else would confuse. It always comes through when the section deals it and leaves the Full Resonance break odds alone. Chen opens it with `boss_medium_ready`.
+Close the Sector's boss form at Medium (`"light": true` on its boss block, `MawBoss.is_light`): duck-depth sweeps, the jump pair, and the volley with its summons. No slam: David, 2026-11-08, slams belong to Hard and always end in push-ups, so a slam that did anything else would confuse. After playing it he asked for the jump pair back, so the fight is more than ducks and the escort. A summon calls six phantoms (it was four), on both forms. It always comes through when the section deals it and leaves the Full Resonance break odds alone. Chen opens it with `boss_medium_ready`.
 
 ## What the audit holds
 

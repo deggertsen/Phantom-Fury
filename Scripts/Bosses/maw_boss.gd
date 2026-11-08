@@ -36,6 +36,9 @@ const TORN_SCALE_GAIN := 1.6
 const ESCORT_LOW := 1.4
 const ESCORT_HIGH := 3.4
 const ESCORT_ORBIT := 0.16
+## How many phantoms a summon calls through. Was 4; David, 2026-11-08, after the lighter form:
+## a bigger escort, so the volley is a longer run of punches. Both forms, so Hard never has less.
+const ESCORT_SUMMON := 6
 ## Anchor a possession feeds back to the boss, and anchor each push-up pulse drains.
 const POSSESSION_FEED := 20
 const PULSE_DRAIN := 12
@@ -116,38 +119,23 @@ func _build_cycle() -> Array:
 	var steps: Array = []
 	for name in order:
 		steps.append_array((blocks[name] as Array).duplicate(true))
+	var jump_side := -1.0 if randf() < 0.5 else 1.0
+	steps.append_array([
+		{"do": "low_sweep", "tell": 1.2, "speed": 7.0, "side": jump_side},
+		{"do": "rest", "seconds": 0.8},
+		{"do": "low_sweep", "tell": 1.0, "speed": 7.5, "side": -jump_side},
+		{"do": "rest", "seconds": 2.2},
+	])
 	if is_light():
 		steps = _light_steps(steps)
-	else:
-		var jump_side := -1.0 if randf() < 0.5 else 1.0
-		steps.append_array([
-			{"do": "low_sweep", "tell": 1.2, "speed": 7.0, "side": jump_side},
-			{"do": "rest", "seconds": 0.8},
-			{"do": "low_sweep", "tell": 1.0, "speed": 7.5, "side": -jump_side},
-			{"do": "rest", "seconds": 2.2},
-		])
 	_last_order = order
 	return steps
 
-## A cycle for the lighter form: no slam and no jump pair. David, 2026-11-08: slams belong to Hard
-## and always end in push-ups, so a slam that only pulls back would confuse. The summon stays so
-## the volley still has an escort to throw.
+## A cycle for the lighter form: everything but the slam. David, 2026-11-08: slams belong to Hard
+## and always end in push-ups, so a slam that only pulls back would confuse; the jump pair stays so
+## the fight is more than ducks and the escort. The summon stays so the volley has an escort.
 static func _light_steps(steps: Array) -> Array:
-	var out: Array = []
-	var skip_rest := false
-	for step in steps:
-		var kind: String = step.get("do", "")
-		if kind == "slam":
-			continue
-		if kind == "low_sweep":
-			skip_rest = true
-			continue
-		if skip_rest and kind == "rest":
-			skip_rest = false
-			continue
-		out.append(step)
-	out.append({"do": "rest", "seconds": 1.6})
-	return out
+	return steps.filter(func(step: Dictionary) -> bool: return step.get("do", "") != "slam")
 
 ## A shuffle of the four blocks with the summon before the volley, different from last time.
 func _cycle_order() -> Array:
@@ -235,7 +223,7 @@ static func decide_break(maws_faced: int, maws_without_boss: int, roll: float, o
 	return roll < odds
 
 ## The lighter form Close the Sector deals at Operator (David, 2026-11-08): duck-depth sweeps, the
-## volley, and its summons. No slam (slams are Hard's, and always end in push-ups) and no jump pair.
+## jump pair, the volley, and its summons. No slam: slams are Hard's, and always end in push-ups.
 func is_light() -> bool:
 	return bool(boss_config.get("light", false))
 
@@ -905,7 +893,7 @@ func _summon_escort() -> void:
 	if _escorts.size() >= 3:
 		return
 	var fresh: Array[Node3D] = []
-	for _i in 4:
+	for _i in ESCORT_SUMMON:
 		var phantom := _rift.spawn_escort()
 		if phantom:
 			fresh.append(phantom)

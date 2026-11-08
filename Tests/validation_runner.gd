@@ -2085,7 +2085,7 @@ func _validate_resonance_sweep() -> void:
 ## clipped; an Eel is cleared only by a jump. Both ride a wave's extras layer, outside the feed's
 ## slots, beside pinks that wait for a phantom of the feed. Tiers gate them: a Ray asks a duck below
 ## Full Resonance and a squat at it, and an Eel never comes without jumps. Last Stand's doors stand
-## at fixed bearings across the front; the Maw's lighter form never slams or asks for a jump;
+## at fixed bearings across the front; the Maw's lighter form never slams but keeps its jumps;
 ## and Chen calls each one.
 func _validate_body_phantoms() -> void:
 	var player := Node3D.new()
@@ -2216,7 +2216,7 @@ func _validate_body_phantoms() -> void:
 	director.queue_free()
 	container.queue_free()
 	await process_frame
-	# The Maw's lighter form: no slam and no jump pair in any cycle, the volley in every one, and
+	# The Maw's lighter form: no slam in any cycle, the jump pair and the volley in every one, and
 	# it always comes through without touching the Full Resonance break odds.
 	var boss := MawBoss.new()
 	root.add_child(boss)
@@ -2226,8 +2226,8 @@ func _validate_body_phantoms() -> void:
 		var steps := boss._build_cycle()
 		boss._cycles += 1
 		var does: Array = steps.map(func(step: Dictionary) -> String: return String(step.get("do", "")))
-		if "low_sweep" in does or "slam" in does or not "volley" in does or not "summon" in does:
-			failures.append("The Maw's lighter form slams, asks for a jump, or lost its volley: %s" % [does])
+		if not "low_sweep" in does or "slam" in does or not "volley" in does or not "summon" in does:
+			failures.append("The Maw's lighter form slams, or lost its jumps or volley: %s" % [does])
 	boss.boss_config = {}
 	boss._cycles = 0
 	var full_does: Array = boss._build_cycle().map(func(step: Dictionary) -> String: return String(step.get("do", "")))
@@ -2922,7 +2922,7 @@ func _validate_phantom_hold() -> void:
 		var punch: Dictionary = pink.receive_strike({"hand_id": &"left", "position": pink.global_position, "direction": Vector3.FORWARD, "speed": 4.0})
 		if punch.get("valid", true) or not pink.is_held():
 			failures.append("A punch moved a held pink")
-		head.global_position += Vector3(0.6, 0.0, 0.0)
+		head.global_position += Vector3(0.9, 0.0, 0.0)
 		var line := pink.charge_line()
 		if Geometry3D.get_closest_point_to_segment(head.global_position, line[0], line[1]).distance_to(head.global_position) <= TutorialDirector.LANE_CLEARANCE:
 			failures.append("A side-step did not leave the pink's lane")
@@ -3790,7 +3790,7 @@ func _validate_tutorial_flow() -> void:
 							failures.append("A punch released a held pink")
 					elif not acted.has(&"pink_step") and "tutorial_pink_punch" in tutorial.spoken:
 						acted[&"pink_step"] = true
-						camera.position = Vector3(0.6, 1.6, 0.0)
+						camera.position = Vector3(0.9, 1.6, 0.0)
 			&"possession":
 				camera.position = Vector3(0.0, 1.6, 0.0)
 			&"power":

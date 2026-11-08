@@ -67,8 +67,8 @@ const TIERS := {
 		"jumps": false,
 		"push_ups": false,
 		"bosses": false,
-		# The Maw's lighter form may close a sector here: duck-depth sweeps and the volley, no slams
-		# (Hard's, always push-ups) and no jumps (David, 2026-11-08).
+		# The Maw's lighter form may close a sector here: duck-depth sweeps, its jump pair, and the
+		# volley; no slams (Hard's, always push-ups). David, 2026-11-08.
 		"light_bosses": true,
 		"deploy_event": "deploy_medium",
 	},
@@ -112,7 +112,7 @@ static func blurb(tier_id: String) -> String:
 static func allows_bosses(tier_id: String) -> bool:
 	return bool(info(tier_id).get("bosses", false))
 
-## The Maw's lighter form (no jumps, no push-ups) may come through at this tier.
+## The Maw's lighter form (no slam, so no push-ups) may come through at this tier.
 static func allows_light_bosses(tier_id: String) -> bool:
 	return allows_bosses(tier_id) or bool(info(tier_id).get("light_bosses", false))
 
@@ -186,7 +186,8 @@ static func apply_wave(wave: Dictionary, tier_id: String) -> Dictionary:
 	return out
 
 ## A wave's extras layer at this tier: each timer scaled as the feed is, and an Eel dropped where the
-## tier asks for no jumps, so a wave can never make a player jump below Full Resonance.
+## tier asks for no jumps, so no rift wave makes a player jump below Full Resonance (the lighter
+## Maw's jump pair is the one exception, by David's choice on 2026-11-08).
 static func _extras_at(extras: Array, tier: Dictionary) -> Array:
 	var out: Array = []
 	for entry in extras:

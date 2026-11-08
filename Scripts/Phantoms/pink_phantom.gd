@@ -8,6 +8,10 @@ class_name SpearfinPhantom
 @export var charge_speed: float = 7.0
 @export var dodge_radius: float = 0.65
 
+## David, 2026-11-08: twice the other phantoms' size, body and contact alike, so getting out of
+## its way takes a real step rather than a lean.
+const SIZE := 2.0
+
 var _telegraph_remaining: float
 var _charging: bool = false
 var _previous_target_distance: float = INF
@@ -23,6 +27,7 @@ func _ready() -> void:
 	phantom_color = Color(1.0, 0.15, 0.65, 0.9)
 	base_score = 200
 	rift_damage = 18
+	possession_radius *= SIZE
 	super()
 	_telegraph_remaining = telegraph_seconds
 	_pink_bow = randf_range(0.45, 2.6) * (-1.0 if randf() < 0.5 else 1.0)
@@ -31,6 +36,9 @@ func _ready() -> void:
 ## The Spearfin: a needle-billed fish built to charge.
 func _creature_mesh() -> Mesh:
 	return CreatureMesh.spearfin(_form)
+
+func _body_scale() -> float:
+	return super() * SIZE
 
 func _tune_creature_material(material: ShaderMaterial) -> void:
 	material.set_shader_parameter("sway_speed", 5.0)
