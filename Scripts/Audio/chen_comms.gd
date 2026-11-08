@@ -154,15 +154,28 @@ func _can_still_start(entry: Dictionary) -> bool:
 		return _earliest_start(entry) - float(entry["at"]) <= own_wait
 	return entry["priority"] >= 3 or _earliest_start(entry) - float(entry["at"]) <= _max_wait
 
+## A take at random, never the one this moment played last. Recorded takes go first: a line still
+## waiting for its recording is only picked when none of the moment's lines has one, so new
+## lines in the script join the rotation as their clips land instead of playing as silent captions.
+func _pick_take(event: String, count: int) -> int:
+	var recorded: Array[int] = []
+	for i in count:
+		if _streams.has("%s_%d" % [event, i + 1]):
+			recorded.append(i)
+	var pool: Array[int] = recorded
+	if pool.is_empty():
+		for i in count:
+			pool.append(i)
+	var last := int(_last_take.get(event, -1))
+	if pool.size() > 1:
+		pool.erase(last)
+	return pool[randi() % pool.size()]
+
 func _play(event: String) -> void:
 	var lines: Array = _events[event].get("lines", [])
 	if lines.is_empty():
 		return
-	var take := 0
-	if lines.size() > 1:
-		take = randi() % (lines.size() - 1)
-		if take >= int(_last_take.get(event, -1)):
-			take += 1
+	var take := _pick_take(event, lines.size())
 	_last_take[event] = take
 	_playing_event = event
 	if event.begins_with("first_"):

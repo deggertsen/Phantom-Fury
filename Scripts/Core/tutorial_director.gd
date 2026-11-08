@@ -32,7 +32,7 @@ const NUDGE_SECONDS := 8.0
 const MAX_NUDGES := 2
 ## Silence between two of her lines.
 const BREATH := 0.25
-## The head this far from a paused pink's charge line is out of its lane.
+## The head this far from a paused pink's charge line is out of its path.
 const LANE_CLEARANCE := 0.5
 ## Both fists held this long in the play-space beat says "ready".
 const READY_HOLD := 0.5
@@ -370,12 +370,12 @@ func _beat_green() -> bool:
 	return await _say("tutorial_green_done")
 
 func _beat_pink() -> bool:
-	# The lane lights while it tells, so Chen explains it then; the dodge cue comes on the pause.
+	# Chen explains the tell while it lines up; the dodge cue comes on the pause.
 	var phantom := await _send_pink(["tutorial_pink", "tutorial_pink_lane"])
 	if phantom == null:
 		return false
 	_tag(phantom, "CAN'T BE PUNCHED")
-	_show_card("STEP OUT OF THE LANE, OR DUCK")
+	_show_card("STEP ASIDE, OR DUCK")
 	if not await _say("tutorial_pink_move"):
 		return false
 	var pink := phantom

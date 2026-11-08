@@ -6,7 +6,7 @@
 - Phantom base: one continuous accelerating bezier arc into reach, lunge at the head, homing on the live head close in, an immediate turn back after a miss, recover and re-approach. Strikes count once in reach. Stall and lifetime cleanup.
 - Angler (yellow left, blue right): lure as the resonance crit in hook, uppercut, or jab position. Wrong hand rejects and breaks the chain.
 - Carapace (green): first hand is a catch, second hand inside 0.55 s is the block.
-- Spearfin (pink): telegraph, floor lane shader, charge; resolved by leaving the lane. Cannot be punched.
+- Spearfin (pink): telegraph (bill and aim only; the floor lane was removed 2026-11-07), charge; resolved by leaving its path. Cannot be punched.
 - Three body forms per species, built as one mesh each and prewarmed with the combat shaders while the menu is up.
 - Pressure scaling per wave: speed and telegraph scales applied to every phantom, and the difficulty's contact scale to every contact.
 - Possession: head or body within 0.30 m of the phantom core. Drains 20 life force, plays the siphon sound, frost and veins, distortion and impact slam.

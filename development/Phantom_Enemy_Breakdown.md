@@ -9,7 +9,7 @@ How phantoms work in the code today, and what is still planned. Updated 2026-10-
 | Yellow | Angler | `yellow_phantom.gd` on `resonance_phantom.gd` | Left hand. Lure is the crit. | 100 (crit 220) | 10 (crit 20) |
 | Blue | Angler | `blue_phantom.gd` on `resonance_phantom.gd` | Right hand. Lure is the crit. | 100 (crit 220) | 10 (crit 20) |
 | Green | Carapace | `green_phantom.gd` | Both hands inside 0.55 s. First hand is a catch. | 180 | 16 |
-| Pink | Spearfin | `pink_phantom.gd` | Cannot be punched. Leave its lane. | 200 | 18 |
+| Pink | Spearfin | `pink_phantom.gd` | Cannot be punched. Get out of its path. | 200 | 18 |
 | none | Drifter | `phantom.gd` base | Any hand. Not in any wave pool today. | 100 | 10 |
 
 A valid strike during the phantom's commit phase is "on beat": score times 1.25, rift damage times 1.15. Because strikes only count in reach, nearly every valid hit is on beat. Pink's dodge is always on beat.
@@ -47,7 +47,7 @@ The lure (`SweetSpotVisual`) sits in one of three places relative to the face th
 Approaches lower and faster, widens its body in the commit phase. The first hand to touch it starts a 0.55 s window and returns `block_half`; the other hand inside that window completes the block. The same hand again, or a late second hand, restarts the window.
 
 ### Spearfin specifics
-Does not use the arc. It telegraphs for `telegraph_seconds` (1.15 s) while a chevron lane shader draws on the floor from the fish to the player and a little past. The aim starts bowed to one side and straightens as the telegraph completes, then it charges at `charge_speed` (7 m/s). Passing its locked target without possessing resolves it as a dodge.
+Does not use the arc. It telegraphs for `telegraph_seconds` (1.15 s); nothing is drawn on the floor (the chevron lane was removed on 2026-11-07 as too strong a tell), so the tell is the bill and the aim. The aim starts bowed to one side and straightens as the telegraph completes, then it charges at `charge_speed` (7 m/s). Passing its locked target without possessing resolves it as a dodge.
 
 ## Training hold
 

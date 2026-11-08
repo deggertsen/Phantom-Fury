@@ -31,6 +31,7 @@ func _run_validation() -> void:
 	await _validate_breach_sites()
 	await _validate_results_menu()
 	await _validate_pink_dodge()
+	_validate_chen_takes()
 	_validate_squat_detector()
 	_validate_push_up_detector()
 	_validate_jump_detection()
@@ -309,6 +310,9 @@ func _validate_pink_dodge() -> void:
 	var pink := pink_scene.instantiate()
 	root.add_child(pink)
 	await process_frame
+	# The floor lane was removed on 2026-11-07: the bill and the aim are the whole tell.
+	if pink.find_child("DodgeLane", true, false) != null:
+		failures.append("Pink still paints a lane on the floor")
 	pink._telegraph_remaining = 0.0
 	pink._locked_target = pink.global_position + Vector3.FORWARD
 	pink._previous_target_distance = 0.5
@@ -366,6 +370,32 @@ func _validate_pink_dodge() -> void:
 	caught.queue_free()
 	inline.queue_free()
 	await process_frame
+
+## Chen picks a recorded take before a line still waiting for its clip, and never the take she
+## played last, so new lines in the script never play as silent captions while recorded ones exist.
+func _validate_chen_takes() -> void:
+	var chen := ChenComms.new()
+	chen._streams = {"probe_2": AudioStreamWAV.new(), "probe_4": AudioStreamWAV.new()}
+	var seen := {}
+	for i in 40:
+		var take := chen._pick_take("probe", 5)
+		if take != 1 and take != 3:
+			failures.append("Chen picked take %d, which has no recording, over recorded takes" % (take + 1))
+			break
+		if take == int(chen._last_take.get("probe", -1)):
+			failures.append("Chen repeated the take she played last")
+			break
+		chen._last_take["probe"] = take
+		seen[take] = true
+	if seen.size() != 2:
+		failures.append("Chen did not rotate between her recorded takes")
+	chen._streams = {}
+	chen._last_take = {"probe": 0}
+	for i in 20:
+		if chen._pick_take("probe", 3) == 0:
+			failures.append("With nothing recorded, Chen repeated the take she played last")
+			break
+	chen.free()
 
 func _validate_attack_window() -> void:
 	var yellow_scene := load("res://Scenes/Phantoms/yellow_phantom.tscn") as PackedScene

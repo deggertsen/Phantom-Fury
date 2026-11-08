@@ -15,7 +15,7 @@
     "mission_start_first": {
       "priority": 2, "cooldown": 0, "tag": "[focused]",
       "note": "The Striker's first attempt at this breach. Watchful, a little protective.",
-      "lines": ["New ground, Striker. Watch how they move here.", "First time at this breach. Read them before you chase them.", "We haven't seen this rift before. Eyes open.", "Fresh breach. I'll call what I can."]
+      "lines": ["New ground, Striker. Watch how they move here.", "First time at this breach. Read them before you chase them.", "We haven't seen this rift before. Eyes open.", "Fresh breach. I'll call what I can.", "No readings on file here. Watch, then hit.", "Unfamiliar breach. Let them show you their pattern.", "Nobody's fought this district yet. You're first in.", "Clean slate, Striker. Learn it fast.", "This one's new to me too. Hands up.", "No data on this breach. Keep your feet under you.", "First contact here. Don't overcommit early.", "I've got nothing on this rift. Trust your hands.", "Unmapped ground. Stay patient, stay sharp.", "New breach, same rules. Color to hand."]
     },
     "mission_start_retry": {
       "priority": 2, "cooldown": 0, "tag": "[determined]",
@@ -59,7 +59,7 @@
     "first_yellow": {"priority": 1, "cooldown": 5, "tag": "[instructive]", "note": "First yellow Angler of the session. Teaching, quick.", "lines": ["Yellow. Left hand. Go for the lure.", "That's a yellow. Hit the lure with your left.", "Yellow means left. Aim for the light.", "Left hand on the yellows. Strike the lure."]},
     "first_blue": {"priority": 1, "cooldown": 5, "tag": "[instructive]", "note": "First blue Angler of the session.", "lines": ["Blue. Right hand. Strike the lure.", "That's a blue. Hit the lure with your right.", "Blue means right. Aim for the light.", "Right hand on the blues. Strike the lure."]},
     "first_green": {"priority": 1, "cooldown": 5, "tag": "[instructive]", "note": "First green Carapace of the session.", "lines": ["Green. Block it with both hands.", "Greens won't break to one hand. Use both.", "Green incoming. Both fists, block it.", "Catch the green on both hands."]},
-    "first_pink": {"priority": 2, "cooldown": 5, "tag": "[urgent]", "note": "First pink Spearfin of the session. It is about to charge.", "lines": ["Pink is locking on. Step out of its lane.", "Pink charge. Step aside.", "Watch the pink. Get out of its line.", "Pink's lining up on you. Move."]},
+    "first_pink": {"priority": 2, "cooldown": 5, "tag": "[urgent]", "note": "First pink Spearfin of the session. It is about to charge.", "lines": ["Pink is locking on. Sidestep it.", "Pink charge. Step aside.", "Watch the pink. Get out of its line.", "Pink's lining up on you. Move."]},
     "sweep": {
       "priority": 3, "cooldown": 0, "max_wait": 0.6, "tag": "[urgent]",
       "note": "Rails of rift energy just lit at head height. A blade is about to sweep through and the Striker has about a second to squat under it. One or two sharp words, half a second at most. Dropped if she is mid-line, because a late call is worse than none.",
@@ -222,10 +222,10 @@
     "tutorial_green_one": {"priority": 3, "cooldown": 0, "tag": "[firm]", "note": "Training. Only one fist arrived. Corrective, patient.", "lines": ["Together. Both fists at the same time.", "One fist isn't enough. Both at once."]},
     "tutorial_green_done": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. The two-fist catch landed.", "lines": ["That's the catch."]},
     "tutorial_pink": {"priority": 3, "cooldown": 0, "tag": "[focused]", "note": "Training. A paused pink Spearfin. It cannot be fought, but it burns out fast in our world, so dodging is enough.", "lines": ["Pink can't be punched, but their energy in our world fades quickly. Just dodge them."]},
-    "tutorial_pink_lane": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. The glowing lane on the floor is where it will charge.", "lines": ["That line on the floor is its charge path."]},
-    "tutorial_pink_move": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. How to beat it: leave the lane.", "lines": ["Step out of the lane, or duck under it."]},
-    "tutorial_pink_punch": {"priority": 3, "cooldown": 0, "tag": "[firm]", "note": "Training. The recruit punched the pink; it passed straight through.", "lines": ["Your fists go right through it. Move.", "Don't punch it. Get out of the line."]},
-    "tutorial_pink_done": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. It charged past an empty lane.", "lines": ["Clean dodge. That still drains the rift."]},
+    "tutorial_pink_lane": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. The bill points where it will charge, straight through where the recruit stands.", "lines": ["See where its bill points? That's where it charges."]},
+    "tutorial_pink_move": {"priority": 3, "cooldown": 0, "tag": "[instructive]", "note": "Training. How to beat it: get out of its path.", "lines": ["Step aside, or duck under it."]},
+    "tutorial_pink_punch": {"priority": 3, "cooldown": 0, "tag": "[firm]", "note": "Training. The recruit punched the pink; it passed straight through.", "lines": ["Your fists go right through it. Move.", "Don't punch it. Get out of its way."]},
+    "tutorial_pink_done": {"priority": 3, "cooldown": 0, "tag": "[approving]", "note": "Training. It charged through where the recruit had been.", "lines": ["Clean dodge. That still drains the rift."]},
     "tutorial_let_in": {"priority": 3, "cooldown": 0, "tag": "[calm]", "note": "Training. She is about to let a phantom hit the recruit on purpose.", "lines": ["This next one, I'm letting through."]},
     "tutorial_hands_down": {"priority": 3, "cooldown": 0, "tag": "[calm]", "note": "Training. Reassuring: it is simulated, so lower the fists.", "lines": ["Hands down. The gauntlets will simulate the hit."]},
     "tutorial_possessed": {"priority": 3, "cooldown": 0, "tag": "[serious]", "note": "Training. The phantom just went into the recruit; their vision lurched. Serious, steady.", "lines": ["That's a possession. It fed on your life force."]},
