@@ -79,6 +79,15 @@ func charge_line() -> PackedVector3Array:
 	var past := _locked_target + (through.normalized() * CHARGE_OVERRUN if through.length_squared() > 0.0001 else Vector3.ZERO)
 	return PackedVector3Array([global_position, past])
 
+## The Spearfin charges its locked lane rather than homing back after the player sidesteps.
+func incoming_callout_seconds() -> float:
+	if _terminal or _dissolving or _escorting or _held:
+		return 0.0
+	var to_target := _locked_target - global_position
+	if _charging and velocity.dot(to_target) <= 0.0:
+		return 0.0
+	return maxf(to_target.length() - possession_radius, 0.0) / maxf(charge_speed, 0.01)
+
 func _physics_process(delta: float) -> void:
 	if _terminal or _escorting:
 		super(delta)

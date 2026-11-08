@@ -32,6 +32,7 @@ func _run_validation() -> void:
 	await _validate_results_menu()
 	await _validate_pink_dodge()
 	_validate_chen_takes()
+	await _validate_chen_incoming_calls()
 	_validate_squat_detector()
 	_validate_push_up_detector()
 	_validate_jump_detection()
@@ -397,6 +398,123 @@ func _validate_chen_takes() -> void:
 			failures.append("With nothing recorded, Chen repeated the take she played last")
 			break
 	chen.free()
+
+## Spawn signals must warn now, not rediscover dissolving bodies after the voice queue clears.
+func _validate_chen_incoming_calls() -> void:
+	var player := Node3D.new()
+	player.add_to_group("Player")
+	var camera := Node3D.new()
+	camera.name = "XRCamera3D"
+	camera.position.y = 1.6
+	player.add_child(camera)
+	root.add_child(player)
+	var chen := ChenComms.new()
+	root.add_child(chen)
+	await process_frame
+	await process_frame
+	chen.set_process(false)
+	chen._streams.clear() # Deterministic caption clock, independent of recording length/audio hardware.
+	var round := RoundController.new()
+	round._round_active = true
+	round.elapsed_seconds = 2.0
+	chen._round = round
+	var said: Array[String] = []
+	chen.line_started.connect(func(_speaker: String, _text: String, _seconds: float) -> void: said.append(chen._playing_event))
+	# Each species arrives through node_added -> ready, with its final variant ID and pressure.
+	for kind in ["yellow", "blue", "green", "pink", "ray", "eel"]:
+		var phantom := _spawn_chen_target(kind)
+		await process_frame
+		chen._ended_at = chen._clock # The old five-second cooldown would suppress this warning.
+		chen._process(1.0 / 72.0)
+		if chen._playing_event != "first_" + kind:
+			failures.append("Chen did not announce incoming %s immediately after spawn" % kind)
+		chen.cut_off()
+		phantom.free()
+	chen._introduced.clear()
+	# Queue behind a short remaining line, then punch before the queued warning can start.
+	chen._play("mission_start")
+	chen._speaking_until = chen._clock + 0.2
+	var yellow := _spawn_chen_target("yellow") as Phantom
+	await process_frame
+	if not chen._queue.any(func(entry: Dictionary) -> bool: return entry["event"] == "first_yellow"):
+		failures.append("Chen did not queue a still-timely warning behind current speech")
+	yellow.position = Vector3(0.0, 1.6, -1.0)
+	yellow.receive_strike({"hand_id": &"left", "position": yellow.global_position, "speed": 4.0})
+	said.clear()
+	_step_chen(chen, 6.0)
+	if "first_yellow" in said or chen._introduced.has("yellow"):
+		failures.append("Chen announced an already-punched, dissolving phantom")
+	yellow.free()
+	# Dropping that warning must leave the introduction available for a new, live arrival.
+	yellow = _spawn_chen_target("yellow") as Phantom
+	await process_frame
+	chen._process(1.0 / 72.0)
+	if chen._playing_event != "first_yellow":
+		failures.append("A stale warning consumed the next live phantom's introduction")
+	chen.cut_off()
+	yellow.free()
+	# A pink's dodge resolves before its dissolve ends; a Ray/Eel also remains after crossing.
+	for kind in ["pink", "ray", "eel"]:
+		chen._introduced[kind] = true
+		chen._play("mission_start")
+		chen._speaking_until = chen._clock + 0.2
+		var phantom := _spawn_chen_target(kind)
+		await process_frame
+		chen.say(kind + "_call", phantom)
+		if phantom is Phantom:
+			phantom.resolve_without_strike({"valid": true, "resolution_kind": &"dodge"})
+		else:
+			phantom._clear(true)
+		said.clear()
+		_step_chen(chen, 1.0)
+		if kind + "_call" in said:
+			failures.append("Chen warned about an already-dodged %s" % kind)
+		chen.cut_off()
+		phantom.free()
+	# A live target that is too close, freed, cleaned up, or out of time cannot start a warning.
+	for reason in ["near", "freed", "cleanup", "busy"]:
+		yellow = _spawn_chen_target("yellow") as Phantom
+		await process_frame
+		chen._play("mission_start")
+		chen._speaking_until = chen._clock + (3.0 if reason == "busy" else 0.2)
+		chen.say("first_yellow", yellow)
+		match reason:
+			"near": yellow.position = Vector3(0.0, 1.6, -2.0)
+			"freed": yellow.free()
+			"cleanup": yellow.force_cleanup()
+		said.clear()
+		_step_chen(chen, 6.0)
+		if "first_yellow" in said:
+			failures.append("Chen started an obsolete warning (%s)" % reason)
+		chen.cut_off()
+		if is_instance_valid(yellow):
+			yellow.free()
+	# Training and boss dialogue still own their own callouts.
+	chen._introduced.clear()
+	round._mission = {"tutorial": true}
+	yellow = _spawn_chen_target("yellow") as Phantom
+	await process_frame
+	chen._process(0.1)
+	if chen.is_busy():
+		failures.append("Automatic phantom sightings spoke during training")
+	round._mission = {}
+	chen.scripted = true
+	chen.say("first_yellow", yellow)
+	if chen.is_busy():
+		failures.append("An incoming warning interrupted scripted boss dialogue")
+	yellow.free()
+	chen.free()
+	round.free()
+	player.free()
+	await process_frame
+
+func _spawn_chen_target(kind: String) -> Node3D:
+	var phantom := (load(MissionCatalog.scene_path(kind)) as PackedScene).instantiate() as Node3D
+	phantom.position = Vector3(0.0, 1.6, -12.0)
+	root.add_child(phantom)
+	phantom.set_physics_process(false)
+	phantom.set_process(false)
+	return phantom
 
 func _validate_attack_window() -> void:
 	var yellow_scene := load("res://Scenes/Phantoms/yellow_phantom.tscn") as PackedScene

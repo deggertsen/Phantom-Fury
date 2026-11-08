@@ -140,6 +140,14 @@ func set_interactions_enabled(enabled: bool) -> void:
 func shows_approach_cue() -> bool:
 	return not _judged
 
+## Time until contact, not until the creature finishes fading beyond the player. Ignoring any
+## remaining approach/lane wait is conservative: a warning may be dropped, never delayed by it.
+func incoming_callout_seconds() -> float:
+	if _judged or _finished or not _interactions_enabled:
+		return 0.0
+	var ahead := start_distance - _blade_travel + (_head_position() - _center).dot(_direction) - contact_lead
+	return maxf(_telegraph_remaining, 0.0) + maxf(ahead, 0.0) / maxf(blade_speed, 0.01)
+
 func is_in_flight() -> bool:
 	return not _finished
 
