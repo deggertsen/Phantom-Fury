@@ -159,7 +159,8 @@ func _capture_tutorial(camera: Node3D) -> void:
 			&"pink":
 				if held and not chen.is_busy() and not stepped:
 					stepped = true
-					camera.position.x = 0.6
+					# Clear the training's own lane check with room to spare.
+					camera.position.x = TutorialDirector.LANE_CLEARANCE + 0.2
 			&"possession":
 				camera.position.x = 0.0
 				# Desktop cannot raise a glove into view: Enter stands in for the look.
