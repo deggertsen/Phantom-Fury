@@ -129,6 +129,12 @@ Things to feel on this build: the first boot after a reset (world map with Train
 - **Chen's first-attempt line.** "We haven't seen this rift before" played at the start of almost every mission: every world district is a new mission id, so the first-attempt moment fires nearly every time. Ten more first-attempt lines added and voiced; all fourteen pass `check_vo.ps1`.
 - **Pink floor lane removed.** Too strong a tell, and the pink was already easy to dodge. The bill and the straightening aim are the tell now. Training's card and Chen's pink lines no longer mention a lane.
 
+### 2026-11-08 — alpha channel build, v1.0.0 code 5, commit a0d9361
+
+Fourth alpha build. Channel alpha, app 1380039785197018, build ID 1416425178225145, APK sha256 12a247234a6e3a190f86e695529fddcddf5e30adebb69394ca88eb58d57b6ac9 (131.2 MB). Notes: Easy, Medium, and Hard each have their own missions; new Ray and Eel phantoms for squats and jumps; bigger pinks; the Maw's lighter form closes some Medium sectors; 400+ new Chen lines (PR #22). Meta's validation and compatibility tests were still running at upload time.
+
+Things to feel on this build: Hard (Flurry, Storm, Undertow, Last Stand, Shut the Maw), the Ray at speed in Low Ceiling and on Hard, and the Eel on the floor in time to jump. Easy, Medium, the doubled pinks, and the lighter Maw already felt good on the development build. Pull `user://run_log.csv` with `tools/pull_run_log.ps1` after tester sessions.
+
 ### 2026-11-08 — design session (no headset), after alpha build code 4
 
 Not a play session: David's answers to the difficulty layout ([Difficulty_Matrix.md](Difficulty_Matrix.md)), and what was built from them.
