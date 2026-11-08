@@ -126,5 +126,5 @@ Things to feel on this build: the first boot after a reset (world map with Train
 ### 2026-11-07 — self, Quest 3, alpha build code 4 (67cbbbc)
 
 - **Difficulty.** The tiers still do not feel distinct. A full pass on every mission kind at every tier starts with a layout of what each one is today ([Difficulty_Matrix.md](Difficulty_Matrix.md)), then adjustments agreed from it.
-- **Chen's first-attempt line.** "We haven't seen this rift before" played at the start of almost every mission: every world district is a new mission id, so the first-attempt moment fires nearly every time. Ten more first-attempt lines added; they join the rotation once voiced (see Known_Issues, Audio).
+- **Chen's first-attempt line.** "We haven't seen this rift before" played at the start of almost every mission: every world district is a new mission id, so the first-attempt moment fires nearly every time. Ten more first-attempt lines added and voiced; all fourteen pass `check_vo.ps1`.
 - **Pink floor lane removed.** Too strong a tell, and the pink was already easy to dodge. The bill and the straightening aim are the tell now. Training's card and Chen's pink lines no longer mention a lane.

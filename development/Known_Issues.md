@@ -21,7 +21,6 @@ Updated 2026-11-07.
 
 ## Audio
 
-- **Fourteen lines are waiting for Chen's voice (2026-11-07).** Ten new first-attempt mission starts, because the old four played on almost every district, and four pink lines reworded when the floor lane went: `first_pink_1`, `tutorial_pink_lane_1`, `tutorial_pink_move_1`, `tutorial_pink_punch_2`. ElevenLabs rejected the key in `%APPDATA%PhantomFraylevenlabs_key.txt` as invalid. Until a valid key is in place, Chen picks only among recorded takes (`ChenComms._pick_take`), so mission starts rotate the old four and training captions its two unvoiced pink lines. With a valid key, `tools/generate_elevenlabs_vo.ps1 -VoiceId wa4sQVgbDDzUDEzJwch3` voices exactly these, then run `tools/check_vo.ps1`.
 - Chen's clips are generated; listen through once in headset and run `tools/check_vo.ps1` after any script change. Any clip the check flags gets regenerated with `-Only <event>`.
 - Training's 59 `tutorial_` events (70 clips) and the 12 lines that changed "operator" to "Striker" were voiced on 2026-10-13 and pass `check_vo.ps1`. Not yet heard in headset; listen to the introduction especially, the one long speech.
 - Missions have no time limit and no timeout outcome, so Chen has no clock lines. If completion time later feeds medals or a race mode, decide whether she should call a pace.
