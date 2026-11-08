@@ -2,7 +2,7 @@ extends Node3D
 
 ## Edge-of-view chevrons for phantoms outside the headset view.
 ## The colored column is the landmark once you turn. This is the order to turn.
-## Label3D: https://docs.godotengine.org/en/stable/classes/class_label3d.html
+## The chevron carries no text: its colour says which phantom, its pulse how close.
 
 const VIEW_EDGE := deg_to_rad(50.0)
 const HIDE_ANGLE := deg_to_rad(18.0)
@@ -74,9 +74,6 @@ func _aim_marker(id: int, phantom: Node3D, camera: Node3D) -> void:
 		var material := arrow.material_override as StandardMaterial3D
 		if material:
 			material.emission_energy_multiplier = lerpf(1.5, 5.0, closeness) * pulse
-	var label := marker.get_node("Label") as Label3D
-	if label:
-		label.text = "%s  %dm" % [_variant_name(phantom), int(round(flat.length()))]
 
 func _marker_for(id: int, phantom: Node3D) -> Node3D:
 	if _markers.has(id) and is_instance_valid(_markers[id]):
@@ -103,34 +100,9 @@ func _marker_for(id: int, phantom: Node3D) -> Node3D:
 	arrow.material_override = material
 	arrow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	marker.add_child(arrow)
-	var label := Label3D.new()
-	label.name = "Label"
-	label.text = _variant_name(phantom)
-	label.font_size = 64
-	label.pixel_size = 0.0022
-	label.position = Vector3(0.0, 0.16, 0.0)
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = color.lightened(0.25)
-	label.outline_size = 12
-	label.outline_modulate = Color(0.02, 0.02, 0.04)
-	label.no_depth_test = true
-	marker.add_child(label)
 	add_child(marker)
 	_markers[id] = marker
 	return marker
-
-func _variant_name(phantom: Node) -> String:
-	match String(phantom.get("variant_id")):
-		"yellow":
-			return "YELLOW"
-		"blue":
-			return "BLUE"
-		"green":
-			return "GREEN"
-		"pink":
-			return "PINK"
-		_:
-			return "PHANTOM"
 
 func _clear_markers() -> void:
 	for id in _markers.keys():

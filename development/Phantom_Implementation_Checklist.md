@@ -35,7 +35,7 @@ Status as of 2026-10-08. Design detail is in [Phantom_Enemy_Breakdown.md](Phanto
 ## 5. Spawning
 - [x] RiftDirector: rift count, concurrency, placement modes (random ring, clustered pair, front arc)
 - [x] RiftManager: timer spawns from wave pool, live cap, health, flash, dissolve
-- [x] Beacon column, floor ring, label, compass chevron, phantom bearings
+- [x] Beacon column, floor ring, compass chevron, phantom bearings (text labels removed 2026-11-08)
 - [x] Six operations as wave tables
 
 ## 6. Health and scoring

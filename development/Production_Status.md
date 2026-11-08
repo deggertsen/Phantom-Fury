@@ -19,7 +19,7 @@
 ### Rifts and missions
 - Six operations in `Scripts/Core/mission_catalog.gd` with per-rift wave tables, pressure labels, open barks, seal lines, mop-up line, and debriefs.
 - Rift director: single, clustered pair, front-arc, or fixed-bearing (Last Stand's three doors at -60, 0, and 60 degrees) placement; up to three concurrent rifts; staggered first spawns.
-- Rift manager: health, damage flash scaled by punch power, health shader, beacon column with floor ring and label, orbiting debris, scale for The Maw, dissolve on seal.
+- Rift manager: health, damage flash scaled by punch power, health shader, beacon column with floor ring (no text label since 2026-11-08), orbiting debris, scale for The Maw, dissolve on seal.
 - Stragglers: a sealed rift stops spawning but its phantoms stay in play and still score or hurt. The rift reports `drained` when they are gone; the director reports `all_clear` when every rift is sealed and drained, and only then is the operation won. Status reads "SEALED • CLEAR PHANTOMS" meanwhile. Scene teardown is never read as a clear.
 - Rift compass chevron at the edge of view and phantom bearing markers.
 - Round controller: pre-round countdown, elapsed mission clock (counts up, holds on pause, never ends the round), chain multiplier to 3x with crit and on-beat gains, victory, defeat, pause and resume. It applies the chosen difficulty to a copy of the mission before any rift opens. Victory records the completion time as the best time for that operation and difficulty when it is faster.

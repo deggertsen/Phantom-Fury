@@ -556,18 +556,6 @@ func _build_beacon() -> void:
 	ring.position = Vector3(0.0, -3.55, 0.0)
 	ring.material_override = _beacon_material(Color(0.6, 0.25, 1.0), 1.8)
 	_beacon.add_child(ring)
-	var sign := Label3D.new()
-	sign.name = "BeaconLabel"
-	sign.text = "RIFT"
-	sign.font_size = 72
-	sign.pixel_size = 0.012
-	sign.position = Vector3(0.0, 3.85, 0.0)
-	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sign.modulate = Color(0.88, 0.8, 1.0)
-	sign.outline_size = 16
-	sign.outline_modulate = Color(0.05, 0.0, 0.12)
-	sign.no_depth_test = true
-	_beacon.add_child(sign)
 
 func _beacon_material(color: Color, energy: float) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
