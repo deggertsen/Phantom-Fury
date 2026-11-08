@@ -149,3 +149,9 @@ Not a play session: David's answers to the difficulty layout ([Difficulty_Matrix
 - **Feel.** Easy and Medium feel a lot better: the levels read as distinct now. No Rays or Eels seen yet (none at Easy by design; Medium's Rays are in Low Ceiling and Close the Sector), so no feedback on them.
 - **Close the Sector's boss felt pretty good.** Asked for its jump pair back so it is more than ducks and the escort, and for a bigger escort. Done: the lighter Maw keeps its low-sweep jump pair (still no slam), and a summon calls six phantoms instead of four, on both forms so Hard never has less.
 - **Pinks doubled.** Body and contact radius both twice the size (contact 0.6 m from its path instead of 0.3), so getting out of the way takes a real step. Training's clearance before it releases a paused pink rose from 0.5 m to 0.75 m to stay outside the new radius.
+
+### 2026-11-08 — alpha channel build, v1.0.0 code 6, commit 8bfab15
+
+Fifth alpha build. Channel alpha, app 1380039785197018, build ID 1416704661530530, APK sha256 f1ef3a26b6a921848ed488facca734db6ba4d49bb6935b4eb53c4c053666c61c (131.2 MB). Notes: Chen's phantom warnings now track incoming threats; text labels removed from rifts and turn chevrons (PRs #24, #25). Meta's validation and compatibility tests were still running at upload time.
+
+Things to feel on this build: whether Chen's warnings land in time for the phantom they name, and whether rifts and turns still read clearly without their labels.
